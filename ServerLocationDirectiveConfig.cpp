@@ -1,0 +1,71 @@
+#include "ServerLocationDirectiveConfig.hpp"
+#include <map>
+#include <utility>
+
+using namespace webserv;
+
+using std::cout;
+using std::endl;
+
+ServerLocationDirectiveConfig::ServerLocationDirectiveConfig()
+{
+#ifdef PRINT_MSG
+	cout << "ServerLocationDirectiveConfig Default Constructor called" << endl;
+#endif
+}
+
+ServerLocationDirectiveConfig::ServerLocationDirectiveConfig(const ServerLocationDirectiveConfig &to_copy)
+{
+	_location_directive_config = to_copy._location_directive_config;
+}
+
+ServerLocationDirectiveConfig::~ServerLocationDirectiveConfig()
+{
+#ifdef PRINT_MSG
+	cout << "ServerLocationDirectiveConfig Destructor called" << endl;
+#endif
+}
+
+ServerLocationDirectiveConfig*
+ServerLocationDirectiveConfig::get_base(void) const
+{
+	return (new ServerLocationDirectiveConfig());
+}
+
+ServerLocationDirectiveConfig*
+ServerLocationDirectiveConfig::get_copy(void) const
+{
+	return (new ServerLocationDirectiveConfig(*this));
+}
+
+void	ServerLocationDirectiveConfig::set_path(const string &path_to_set)
+{
+	_path = path_to_set;
+}
+
+const ServerLocationDirectiveConfig::map_type &
+ServerLocationDirectiveConfig::get_config() const
+{
+	return (_location_directive_config);
+}
+
+pair<ServerLocationDirectiveConfig::const_iterator_type, ServerLocationDirectiveConfig::const_iterator_type>
+ServerLocationDirectiveConfig::find_values(const string &key) const
+{
+	return (_location_directive_config.equal_range(key));
+}
+
+void	ServerLocationDirectiveConfig::insert_config(const std::pair<string,string> &pair_to_insert)
+{
+	_location_directive_config.insert(pair_to_insert);
+}
+
+std::ostream&	operator<<(std::ostream& os,
+		const ServerLocationDirectiveConfig	&location_directive)
+{
+	ServerLocationDirectiveConfig::map_type	map = location_directive.get_config();
+
+	for (ServerLocationDirectiveConfig::map_type::iterator it = map.begin(); it != map.end(); it++)
+		os << "<key : " MAGENTA << (*it).first << RESET ", value : " CYAN << (*it).second << ">" RESET << endl;
+	return (os);
+}
