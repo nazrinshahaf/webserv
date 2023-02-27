@@ -46,9 +46,21 @@ Request::Request(string request_string)
 #endif
     std::vector<string> headers;
 
-
-    for (char *ptr = std::strtok((char *)request_string.c_str(), "\n"); ptr != NULL;  ptr = strtok(NULL, "\n"))
-        headers.push_back(string(ptr));
+    std::cout << "INNN" << std::endl;
+    // std::cout << "REQUEST_STR <" : request_string << std::endl;
+    while (request_string.find("\n") != request_string.npos)
+    {
+        string line = request_string.substr(0, request_string.find("\n"));
+        std::cout << line << std::endl;
+        headers.push_back(line);
+        request_string = request_string.substr(request_string.find("\n") + 1);
+        std::cout << request_string << std::endl;
+    }
+    // for (char *ptr = std::strtok((char *)request_string.c_str(), "\n"); ptr != NULL;  ptr = strtok(NULL, "\n"))
+    // {
+    //     headers.push_back(string(ptr));
+    //     std::cout << string(ptr) << std::endl;
+    // }
 
     for (std::vector<string>::iterator it = headers.begin(); it != headers.end(); it++)
         std::cout << *it << std::endl;

@@ -3,6 +3,9 @@
 # define SERVER_HPP
 
 #include <vector>
+#include <map>
+#include <string>
+#include <poll.h>
 
 namespace webserv 
 {
@@ -40,12 +43,15 @@ namespace webserv
 			// ListeningSocket	*get_listening_socket(void) const;
 
 		private:
-			std::vector<ListeningSocket>	_sockets;
-			int								_new_socket;
+			std::vector<ListeningSocket>		_sockets;
+			int									_new_socket;
+    		std::map<int, std::string>    		_active_sockets;
+    		std::vector<int>					_erase_list;
 
-			void	acceptor(void);
+			void	acceptor(struct pollfd *fds);
 			void	handler(void);
 			void	responder(void);
+
 	};
 }
 

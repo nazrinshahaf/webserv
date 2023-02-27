@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "Request.hpp"
+#include <map>
 
 using namespace webserv;
 using std::string;
@@ -20,17 +21,18 @@ Server::~Server()
 
 }
 		
-void Server::add_socket(const int &domain, const int &service, const int &protocol, const int &port, const u_long &interface, const int &backlog)
+void	Server::add_socket(const int &domain, const int &service, const int &protocol, const int &port, const u_long &interface, const int &backlog)
 {
     _sockets.push_back(ListeningSocket(domain, service, protocol, port, interface, backlog));
 }
-		
-void Server::launch()
-{
-    struct pollfd fds[200];
-    int nfds = _sockets.size();
 
-    const char *temp_message = "HTTP/1.1 404 OK\nContent-Type: text/html\nContent-Length: 100\n\n\
+void	Server::handler()
+{
+    struct sockaddr_in      address_read;
+    // int                     address_read_len = sizeof(address_read);
+    long	valread;
+
+	const char *temp_message = "HTTP/1.1 404 OK\nContent-Type: text/html\nContent-Length: 100\n\n\
 		<!DOCTYPE html>\
 		<html>\
 		<body>\
@@ -39,6 +41,61 @@ void Server::launch()
 		</body>\
 		</html>";
 
+    for (std::map<int, string>::iterator it = _active_sockets.begin(); it != _active_sockets.end(); it++)
+    {
+        std::cout << string(inet_ntoa(address_read.sin_addr)) << std::endl;
+        char buffer[30000] = {0};
+        valread = recv(it->first , buffer, 65535, 0);
+        if (valread < 0)
+        {
+            perror("error");
+            continue;
+        }
+        else
+        {
+            printf("[%s]\n",buffer );
+            printf("-------------\n");
+        }
+    
+        // webserv::Request(string(buffer));
+		// TODO: implement responder
+        send(it->first , temp_message , strlen(temp_message), MSG_OOB);
+        printf("------------------Hello message sent-------------------\n");
+        close(it->first);
+        _erase_list.push_back(it->first);
+    }
+	for (std::vector<int>::iterator it = _erase_list.begin(); it != _erase_list.end(); it++)
+    	_active_sockets.erase(*it);
+}
+
+void	Server::acceptor(struct pollfd *fds)
+{
+	int	new_socket_fd;
+
+	for (unsigned long i = 0; i < _sockets.size(); i++)
+    {
+        if ((new_socket_fd = accept(fds[i].fd, NULL, NULL)) >= 0)
+        {
+            _active_sockets[new_socket_fd] = string("");
+            while (new_socket_fd >= 0)
+            {
+                new_socket_fd = accept(fds[i].fd, NULL, NULL);
+                if (new_socket_fd >= 0)
+                    _active_sockets[new_socket_fd] = string("");
+                else
+                    break;
+            }
+            continue;
+        }
+    }
+}
+
+void Server::launch()
+{
+    struct pollfd fds[200];
+    int nfds = _sockets.size();
+
+    
     for (unsigned long i = 0; i < _sockets.size(); i++)
     {
         fds[i].fd = _sockets[i].get_sock();
@@ -46,46 +103,19 @@ void Server::launch()
         fds[i].events = POLLIN; // Data other than high priority data maybe read without blocking
         fcntl(fds[i].fd, F_SETFL, O_NONBLOCK);
     }
-    
-    struct sockaddr_in address_read;
-    int                 address_read_len = sizeof(address_read);
-    int                 new_socket_fd;
-    long                valread;
 
     while(1)
     {
         std::cout << fds[nfds - 1].fd << " " << nfds << std::endl;
         printf("\n+++++++ Waiting for new connection ++++++++\n\n");
-        if (poll(fds, nfds, 1000) > 0) //A positive value indicates the number of file descriptors whose returned event flags are not zero. A value of 0 indicates that the time limit expired and the requested events did not occur.
+        // Run this only if a socket is queued (poll) OR we have open sockets that have not yet written bytes
+        if (poll(fds, nfds, 1000) > 0 || _active_sockets.size() > 0)
         {
-            int temp_serv_fd;
-            for (int i = 0; i < nfds; i++)
-            {
-                if (fds[i].revents)
-                {
-                    std::cout << "FD " << i << " HAS BEEN TRIGGERED " << std::endl;
-                    temp_serv_fd = fds[i].fd;
-                }
-            }
-            std::cout << "MESSAGE CAME" << std::endl;
-            if ((new_socket_fd = accept(temp_serv_fd, (struct sockaddr *)&address_read, (socklen_t*)&address_read_len))<0)
-            {
-                perror("In accept");
-                exit(EXIT_FAILURE);
-            }
-            std::cout << string(inet_ntoa(address_read.sin_addr)) << std::endl;
-            char buffer[30000] = {0};
-            valread = read( new_socket_fd , buffer, 30000);
-            (void) valread;
-            // printf("%s\n",buffer );
-            // printf("-------------\n");
-            webserv::Request(string(buffer));
-            send(new_socket_fd , temp_message , strlen(temp_message), MSG_OOB);
-            printf("------------------Hello message sent-------------------\n");
-            close(new_socket_fd);
+			acceptor(fds);
+            std::cout << _active_sockets.size() << " open sockets" << std::endl;
+            handler();
         }
         else
             std::cout << "waiting..." << std::endl;
-
     }
 }
