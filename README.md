@@ -1,4 +1,4 @@
-need to use epoll() but MacOS only had poll()
+Need to use epoll() but MacOS only had poll()
 
 need to implement
 1. Requirements:
