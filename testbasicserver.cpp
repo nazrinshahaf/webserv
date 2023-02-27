@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <iostream>
-#define PORT 80
+#define PORT 81
 #include "Request.hpp"
 
 int test_basic_server()
@@ -84,24 +84,33 @@ int test_basic_server()
     int nfds = 2;
     int current_size = 0;
     int i, j;
+
     memset(fds, 0 , sizeof(fds));
     fds[0].fd = server_fd;
     fds[0].events = POLLIN;
     fds[1].fd = server_fd2;
     fds[1].events = POLLIN;
-
     while(1)
     {
         printf("\n+++++++ Waiting for new connection ++++++++\n\n");
-        if (poll(fds, 1, 1000) > 0) //A positive value indicates the number of file descriptors whose returned event flags are not zero. A value of 0 indicates that the time limit expired and the requested events did not occur.
+        if (poll(fds, 2, 1000) > 0) //A positive value indicates the number of file descriptors whose returned event flags are not zero. A value of 0 indicates that the time limit expired and the requested events did not occur.
         {
+            int temp_serv_fd;
+            for (int i = 0; i < nfds; i++)
+            {
+                if (fds[i].revents)
+                {
+                    std::cout << "FD " << i << " HAS BEEN TRIGGERED " << std::endl;
+                    temp_serv_fd = fds[i].fd;
+                }
+            }
             std::cout << "MESSAGE CAME" << std::endl;
-            if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
+            if ((new_socket = accept(temp_serv_fd, (struct sockaddr *)&address2, (socklen_t*)&addrlen2))<0)
             {
                 perror("In accept");
                 exit(EXIT_FAILURE);
             }
-
+            std::cout << string(inet_ntoa(address2.sin_addr)) << std::endl;
             char buffer[30000] = {0};
             valread = read( new_socket , buffer, 30000);
             // printf("%s\n",buffer );
