@@ -5,7 +5,7 @@ SANITIZE = -fsanitize=address
 RM = rm -f
 
 SRC = ServerConfig.cpp ServerConfigParser.cpp ServerLocationDirectiveConfig.cpp \
-	  ServerNormalDirectiveConfig.cpp
+	  ServerNormalDirectiveConfig.cpp Socket.cpp BindingSocket.cpp ListeningSocket.cpp
 
 MAIN = main.cpp
 

@@ -2,6 +2,8 @@
 
 using std::cout;
 using std::endl;
+using std::cerr;
+using namespace webserv;
 
 /*
  * @note 'socket' : socket is the defualt c way of creating a network socket.
@@ -15,7 +17,8 @@ using std::endl;
  *	to network byte order.
  * */
 
-webserv::Socket::Socket(int domain, int service, int protocol, int port, u_long interface)
+Socket::Socket(const int &domain, const int &service, const int &protocol,
+				const int &port, const u_long &interface)
 {
 #ifdef PRINT_MSG
 	cout << GREEN "Socket Default Constructor Called" RESET << endl;
@@ -26,37 +29,43 @@ webserv::Socket::Socket(int domain, int service, int protocol, int port, u_long 
 	_address.sin_addr.s_addr = htonl(interface);
 
 	_sock = socket(domain, service, protocol);
-	test_connection(_sock);
+	test_connection(_sock, "Default");
 }
 
-webserv::Socket::~Socket()
+Socket::~Socket()
 {
 #ifdef PRINT_MSG
-	cout << GREEN "Socket Destructor Called" RESET << endl;
+	cout << RED "Socket Destructor Called" RESET << endl;
 #endif
 }
 
-void		webserv::Socket::test_connection(int to_test)
+void		Socket::test_connection(const int &sock_fd, const std::string &fd_name) const
 {
-	if (to_test < 0)
+	if (sock_fd < 0)
 	{
-		perror("Failed to connect...");
-		exit(EXIT_FAILURE);
+		cerr << "Failed to connect. "<< endl;
+		exit(EXIT_FAILURE); //maybe throw instead of exit here.
 	}
-	//some success stuff here
+	else
+		cout << GREEN << fd_name << " socket fd successfully created" RESET << endl;
 }
 
-sockaddr_t	webserv::Socket::get_address(void) const
+Socket::sockaddr_t	Socket::get_address() const
 {
 	return (_address);
 }
 
-int			webserv::Socket::get_sock(void) const
+int			Socket::get_sock() const
 {
 	return (_sock);
 }
 
-int			webserv::Socket::get_connection_fd() const
+int			Socket::get_connection_fd() const
 {
 	return (_connection_fd);
+}
+
+void		Socket::set_connection_fd(const int &new_connection_fd)
+{
+	_connection_fd = new_connection_fd;
 }
