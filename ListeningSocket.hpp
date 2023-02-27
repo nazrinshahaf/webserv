@@ -34,10 +34,13 @@ public:
 	 * @param 'interface' : specifies the 4-byte IP address.
 	 * @param 'backlog' : the number of active connections that can
 	 *	be in the queue.
-	 *
+	 * @example:
+	 * 		ListeningSocket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);
 	 * @note : more about protocol sockets
 	 * https://www.ibm.com/docs/en/aix/7.2?topic=protocols-socket
 	 * */
+
+	ListeningSocket() {};
 
 	ListeningSocket(const int &domain, const int &service, const int &protocol,
 			const int &port, const u_long &interface, const int &backlog);

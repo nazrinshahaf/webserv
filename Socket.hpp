@@ -46,10 +46,10 @@ class Socket
 		 * @note : more about protocol sockets
 		 * https://www.ibm.com/docs/en/aix/7.2?topic=protocols-socket
 		 * */
-
+		Socket() {};
 		Socket(const int &domain, const int &service, const int &protocol,
 				const int &port, const u_long &interface);
-		~Socket();
+		virtual ~Socket();
 
 		virtual int	bind_to_network(const int &sock, const sockaddr_t &address) = 0;
 

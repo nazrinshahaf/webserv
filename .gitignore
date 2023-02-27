@@ -1,0 +1,5 @@
+a.out
+webserv
+.vscode
+*.o
+.DS_Store

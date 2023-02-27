@@ -2,6 +2,8 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
+#include <vector>
+
 namespace webserv 
 {
 	class	Server
@@ -29,16 +31,17 @@ namespace webserv
 			 * https://www.ibm.com/docs/en/aix/7.2?topic=protocols-socket
 			 * */
 
-			Server(int domain, int service, int protocol, int port, u_long interface, int backlog);
+			Server();
 			~Server();
 
+			void		add_socket(const int &domain, const int &service, const int &protocol, const int &port, const u_long &interface, const int &backlog);
 			void	launch(void);
 
 			// ListeningSocket	*get_listening_socket(void) const;
 
 		private:
-			ListeningSocket	*_listening_socket;
-			int				_new_socket;
+			std::vector<ListeningSocket>	_sockets;
+			int								_new_socket;
 
 			void	acceptor(void);
 			void	handler(void);

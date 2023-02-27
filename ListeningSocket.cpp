@@ -28,5 +28,5 @@ ListeningSocket::~ListeningSocket()
 
 void	ListeningSocket::start_listening(void)
 {
-	_listening = listen(get_connection_fd(), _backlog);
+	_listening = listen(get_sock(), _backlog);
 }

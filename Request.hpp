@@ -17,6 +17,7 @@ namespace webserv
 			 * @param 'request' : specifies the raw request string which was received
              *
 			 * */
+			Request() {};
 			Request(string request_string);
 
 
@@ -26,11 +27,10 @@ namespace webserv
 			const string host();
 			const string connection();
 
-			class RequiredHeaderParamNotGivenException : public std::exception {
-    			public:
-					string what () {
-    					return "required header has not been supplied";
-					}
+			struct RequiredHeaderParamNotGivenException : public std::exception {
+			const char * what () const throw () {
+					return "required header has not been supplied";
+				}
 			};
 
 		private:
