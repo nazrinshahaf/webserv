@@ -1,6 +1,8 @@
 #include "ListeningSocket.hpp"
-u#ifndef SERVER_HPP
+#ifndef SERVER_HPP
 # define SERVER_HPP
+
+#include <vector>
 
 namespace webserv 
 {
@@ -14,7 +16,7 @@ namespace webserv
 			 * @param 'domain' : specifies the current domain or address family 
 			 *	that needs to be used.
 			 *		ex: ipv4, ipv6, internal routing domain, etc.
-			 * @param 'type' : specifies the type of services that is required
+			 * @param 'service' : specifies the type of services that is required
 			 *	by the application.
 			 *		ex: SOCK_STREAM (virtual circuit services),
 			 *			SOCK_DGRAM(datagram services),
@@ -29,16 +31,17 @@ namespace webserv
 			 * https://www.ibm.com/docs/en/aix/7.2?topic=protocols-socket
 			 * */
 
-			Server(int domain, service, int protocol, int port, u_long interface, int backlog);
+			Server();
 			~Server();
 
+			void		add_socket(const int &domain, const int &service, const int &protocol, const int &port, const u_long &interface, const int &backlog);
 			void	launch(void);
 
-			ListeningSocket	*get_listening_socket(void) const;
+			// ListeningSocket	*get_listening_socket(void) const;
 
 		private:
-			ListeningSocket	*_listening_socket;
-			int				_new_socket;
+			std::vector<ListeningSocket>	_sockets;
+			int								_new_socket;
 
 			void	acceptor(void);
 			void	handler(void);
