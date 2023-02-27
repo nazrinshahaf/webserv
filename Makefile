@@ -17,7 +17,7 @@ all: $(NAME)
 clean:
 	$(RM) $(NAME)
 
-fclean:	clean
+fclean:
 	$(RM) $(NAME)
 
 re: clean all

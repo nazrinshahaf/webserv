@@ -4,7 +4,6 @@
 #include "ServerConfigParser.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
 #include <utility>
-#include <vector>
 #define PORT 80
 
 #include <ios>
@@ -14,8 +13,6 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string>
-#include <set>
-#include <map>
 #include <iostream>
 #include <fstream>
 #include <cstdint>
@@ -87,26 +84,6 @@ int test_basic_server()
     }
     return 0;
 }
-
-//int	test_multimap()
-//{
-//	typedef std::multimap<int,string>			map_type;
-//	typedef std::multimap<int,string>::iterator	map_iterator;
-//
-//	std::multimap<int, string>	mm;
-//
-//	mm.insert(pair<int,string>(1,"80"));
-//	mm.insert(pair<int,string>(1,"[::]80"));
-//	mm.insert(pair<int,string>(3,"lmao"));
-//	mm.insert(pair<int,string>(2,"lmao"));
-//
-//	pair<map_iterator,map_iterator>	range = mm.equal_range(1);
-//
-//	for (map_iterator it = range.first; it != range.second; it++)
-//		cout << it->second << endl;
-//
-//	return (0);
-//}
 
 void	test_parser()
 {
@@ -227,9 +204,9 @@ void	test_parser_abs()
 
 int	main()
 {
-	//test_basic_server();
+	test_basic_server();
 	//test_multimap();
-	test_parser();
+	// test_parser();
 	//test_parser_abs();
 
 	return (0);
