@@ -1,5 +1,5 @@
 #include "ListeningSocket.hpp"
-u#ifndef SERVER_HPP
+#ifndef SERVER_HPP
 # define SERVER_HPP
 
 namespace webserv 
@@ -14,7 +14,7 @@ namespace webserv
 			 * @param 'domain' : specifies the current domain or address family 
 			 *	that needs to be used.
 			 *		ex: ipv4, ipv6, internal routing domain, etc.
-			 * @param 'type' : specifies the type of services that is required
+			 * @param 'service' : specifies the type of services that is required
 			 *	by the application.
 			 *		ex: SOCK_STREAM (virtual circuit services),
 			 *			SOCK_DGRAM(datagram services),
@@ -29,12 +29,12 @@ namespace webserv
 			 * https://www.ibm.com/docs/en/aix/7.2?topic=protocols-socket
 			 * */
 
-			Server(int domain, service, int protocol, int port, u_long interface, int backlog);
+			Server(int domain, int service, int protocol, int port, u_long interface, int backlog);
 			~Server();
 
 			void	launch(void);
 
-			ListeningSocket	*get_listening_socket(void) const;
+			// ListeningSocket	*get_listening_socket(void) const;
 
 		private:
 			ListeningSocket	*_listening_socket;
