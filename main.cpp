@@ -1,8 +1,11 @@
 #include "BaseConfig.hpp"
+#include "BindingSocket.hpp"
+#include "ListeningSocket.hpp"
 #include "ServerBaseConfig.hpp"
 #include "ServerConfig.hpp"
 #include "ServerConfigParser.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
+#include "Socket.hpp"
 #include <utility>
 #include <vector>
 #define PORT 80
@@ -225,12 +228,20 @@ void	test_parser_abs()
 //	test->set_config(std::string("lmao"));
 //}
 
+void	test_socket()
+{
+	//Socket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY);
+	//BindingSocket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY);
+	ListeningSocket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);
+}
+
 int	main()
 {
 	//test_basic_server();
 	//test_multimap();
-	test_parser();
+	//test_parser();
 	//test_parser_abs();
+	test_socket();
 
 	return (0);
 }

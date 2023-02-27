@@ -1,11 +1,14 @@
 #ifndef SOCKET_HPP
 # define SOCKET_HPP
 
+#include "colours.h"
+
 #include <iostream>
 #include <netinet/in.h>
 #include <cstdlib>
 #include <sys/socket.h>
 #include <stdio.h>
+#include <string>
 
 namespace webserv 
 {
@@ -30,30 +33,33 @@ class Socket
 		 * @param 'domain' : specifies the current domain or address family 
 		 *	that needs to be used.
 		 *		ex: ipv4, ipv6, internal routing domain, etc.
-		 * @param 'type' : specifies the type of services that is required
+		 * @param 'service' : specifies the type of services that is required
 		 *	by the application.
 		 *		ex: SOCK_STREAM (virtual circuit services),
 		 *			SOCK_DGRAM(datagram services),
 		 *			SOCK_RAW(direct ip services).
 		 * @param 'protocol' : specifies a praticular protocal to be used
 		 *	with the socket.
-		 * @port 'port' : the port to connect the socket to
+		 * @param 'port' : the port to connect the socket to.
+		 * @param 'interface' : specifies the 4-byte IP address.
 		 *
 		 * @note : more about protocol sockets
 		 * https://www.ibm.com/docs/en/aix/7.2?topic=protocols-socket
 		 * */
 
-		Socket(int domain, int service, int protocol, int port, u_long interface);
+		Socket(const int &domain, const int &service, const int &protocol,
+				const int &port, const u_long &interface);
 		~Socket();
 
-		virtual int	connect_to_network(int sock, sockaddr_t address) = 0;
+		virtual int	bind_to_network(const int &sock, const sockaddr_t &address) = 0;
 
-		void	test_connection(int to_test);
+		void		test_connection(const int &sock_fd, const std::string &fd_name) const;
 
-		sockaddr_t	get_address(void) const;
-		int			get_sock(void) const;
-		int			get_connection_fd(void) const;
-		//void		set_connection_fd(const int &new_connection_fd);
+		sockaddr_t	get_address() const;
+		int			get_sock() const;
+		int			get_connection_fd() const;
+
+		void		set_connection_fd(const int &new_connection_fd);
 	
 	private:
 
