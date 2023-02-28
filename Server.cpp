@@ -43,13 +43,13 @@ void	Server::handler()
 		</body>\
 		</html>";
 
-	const char *err_msg = "HTTP/1.1 404 \nContent-Type: text/html\n\n\
-		<!DOCTYPE html>\
-		<html>\
-		<body>\
-			<h1>404 Not Found</h1>\
-		</body>\
-		</html>";
+	// const char *err_msg = "HTTP/1.1 404 \nContent-Type: text/html\n\n\
+	// 	<!DOCTYPE html>\
+	// 	<html>\
+	// 	<body>\
+	// 		<h1>404 Not Found</h1>\
+	// 	</body>\
+	// 	</html>";
 
     for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); it++)
     {
@@ -58,24 +58,21 @@ void	Server::handler()
         valread = recv(it->first , buffer, 65535, 0);
         if (valread < 0)
             continue;
-        else
-        {
-            // it->second += buffer;
-            printf("[%s]\n",buffer );
-            printf("-------------\n");
-        }
+        it->second += buffer;
+        Request req((string(buffer)));
+        // printf("[%s]\n",buffer );
+        // printf("-------------\n");
         // check if buffer is fully read
         // if so then close socket
 		// TODO: implement responder
-        Request req((string(buffer)));
-        cout << "The type is " << req.type() << "\n";
-        if (req.type() == "GET")
-        {
-            cout << "Bro send error message" << strlen(err_msg) << "\n";
-            send(it->first , err_msg , strlen(err_msg), MSG_OOB);
-        }
-        else
-            send(it->first , temp_message , strlen(temp_message), MSG_OOB);
+        cout << req << "\n";
+        // if (req.type() == "GET")
+        // {
+            // cout << "Bro send error message" << strlen(err_msg) << "\n";
+            // send(it->first , err_msg , strlen(err_msg), MSG_OOB);
+        // }
+        // else
+        send(it->first , temp_message , strlen(temp_message), MSG_OOB);
         printf("------------------Hello message sent-------------------\n");
         close(it->first);
         _erase_list.push_back(it->first);
@@ -108,27 +105,26 @@ void Server::launch()
     for (unsigned long i = 0; i < _sockets.size(); i++)
     {
         fds[i].fd = _sockets[i].get_sock();
-        cout << "Socket open with fd : [" << fds[i].fd << "]" << endl;
+        cout << YELLOW << "Socket open with fd : [" << fds[i].fd << "]" << RESET << endl;
         fds[i].events = POLLIN; // Data other than high priority data maybe read without blocking
         fcntl(fds[i].fd, F_SETFL, O_NONBLOCK); //set filestatus to non-blocking
     }
+    cout << YELLOW << "Total amount of socket_fds open : " << nfds << RESET << endl;
     while(1)
     {
-        cout << "Final socket_fd's fd : " << fds[nfds - 1].fd << endl;
-		cout << "Total amount of socket_fds open : " << nfds << endl;
-        printf("\n+++++++ Waiting for new connection ++++++++\n\n");
-		cout << _client_sockets.size() << " open sockets" << endl;
+        // printf("\n+++++++ Waiting for new connection ++++++++\n\n");
+		cout << "Connected clients: " << _client_sockets.size() << endl;
         // Run this only if a socket is queued (poll) OR we have open sockets that have not yet written bytes
         if (poll(fds, nfds, 1000) > 0 || _client_sockets.size() > 0)
         {
 			for (unsigned long i = 0; i < _sockets.size(); i++)
 			{
 				acceptor(fds[i].fd);
-				cout << _client_sockets.size() << " open sockets" << endl;
 				handler();
 			}
         }
         else
             cout << "waiting..." << endl;
+        std::cout << std::time(0) << std::endl;
     }
 }

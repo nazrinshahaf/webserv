@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
+#include <map>
 
 using std::string;
 
@@ -10,6 +12,17 @@ namespace webserv
 {
 	class	Request
 	{
+		private:
+    		std::vector <string>		_header_lines;
+    		std::map <string, string>	_headers;
+			string						_type;
+			string						_path;
+			string						_protocol_version;
+			void						find_request_type();
+			void						find_request_path();
+			void						find_request_protocol_version();
+			void						parse_request();
+
 		public:
 			/**
 			 * Request Default Constructor.
@@ -23,21 +36,19 @@ namespace webserv
 
 			~Request();
 
-			const string type();
-			const string host();
-			const string connection();
+			const string 					&type() const;
+			const string 					&path() const;
+			const string 					&protocol_version() const;
+			const std::map<string, string>	&headers() const;
 
 			struct RequiredHeaderParamNotGivenException : public std::exception {
 			const char * what () const throw () {
 					return "required header has not been supplied";
 				}
 			};
-
-		private:
-			string _type;
-			string _host;
-			string _connection;
 	};
 }
+
+std::ostream &operator<<(std::ostream &os, const webserv::Request &request);
 
 #endif // !SERVER_HPP
