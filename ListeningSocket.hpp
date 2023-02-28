@@ -17,6 +17,8 @@ class	ListeningSocket : public BindingSocket
 {
 public:
 
+	typedef	struct sockaddr_in	sockaddr_t;
+
 	/*
 	 * Listening Socket Default Constructor.
 	 *
@@ -47,6 +49,7 @@ public:
 	~ListeningSocket();
 
 	void	start_listening(void);
+	int		accept_connections(void);
 
 private:
 	int	_backlog;

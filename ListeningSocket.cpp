@@ -30,3 +30,14 @@ void	ListeningSocket::start_listening(void)
 {
 	_listening = listen(get_sock(), _backlog);
 }
+
+int		ListeningSocket::accept_connections(void)
+{
+	int	client_socket_fd;
+	//Socket::sockaddr_t	address = get_address();
+
+	//client_socket_fd = accept(get_sock(), (struct sockaddr *)&address, sizeof(struct sockaddr)); //i have to change get_address() to a pointer
+	client_socket_fd = accept(get_sock(), NULL, NULL);
+	test_connection(client_socket_fd, "Client socket");
+	return (client_socket_fd);
+}

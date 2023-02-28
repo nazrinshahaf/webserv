@@ -1,11 +1,13 @@
 #include "Server.hpp"
+#include "Request.hpp"
+
 #include <iostream>
 #include <poll.h>
 #include <fcntl.h>
+#include <string>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include "Request.hpp"
 #include <map>
 
 using namespace webserv;
@@ -74,13 +76,13 @@ void	Server::handler()
  *	*not sure if we need to change the values for adddres for now its left at NULL
  * */
 
-void	Server::acceptor(const int &fd)
-{
-	int	new_socket_fd;
-
-	if ((new_socket_fd = accept(fd, NULL, NULL)) >= 0) //*
-		_client_sockets[new_socket_fd] = string("");
-}
+//void	Server::acceptor(const int &fd)
+//{
+//	int	new_socket_fd;
+//
+//	if ((new_socket_fd = accept(fd, NULL, NULL)) >= 0) //*
+//		_client_sockets[new_socket_fd] = string("");
+//}
 
 void Server::launch()
 {
@@ -103,9 +105,10 @@ void Server::launch()
         // Run this only if a socket is queued (poll) OR we have open sockets that have not yet written bytes
         if (poll(fds, nfds, 1000) > 0 || _client_sockets.size() > 0)
         {
-			for (unsigned long i = 0; i < _sockets.size(); i++)
+			//for (unsigned long i = 0; i < _sockets.size(); i++)
+			for (sockets_type::iterator it = _sockets.begin(); it != _sockets.end(); it++)
 			{
-				acceptor(fds[i].fd);
+				_client_sockets[it->accept_connections()] = string("");
 				cout << _client_sockets.size() << " open sockets" << endl;
 				handler();
 			}

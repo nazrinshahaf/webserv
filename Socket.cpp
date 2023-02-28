@@ -44,7 +44,7 @@ void		Socket::test_connection(const int &sock_fd, const std::string &fd_name) co
 	if (sock_fd < 0)
 	{
 		cerr << "Failed to connect. "<< endl;
-		exit(EXIT_FAILURE); //maybe throw instead of exit here.
+		//exit(EXIT_FAILURE); //maybe throw instead of exit here.
 	}
 	else
 		cout << GREEN << fd_name << " socket fd successfully created" RESET << endl;

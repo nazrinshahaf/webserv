@@ -13,6 +13,8 @@ namespace webserv
 	{
 		public:
 
+			typedef std::vector<ListeningSocket>	sockets_type;
+
 			/*
 			 * Server Default Constructor.
 			 *
@@ -50,7 +52,7 @@ namespace webserv
     		std::map<int, std::string>    		_client_sockets;
     		std::vector<int>					_erase_list;
 
-			void	acceptor(const int &fd);
+			//void	acceptor(const int &fd);
 			void	handler(void);
 			void	responder(void);
 
