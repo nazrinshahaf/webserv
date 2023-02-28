@@ -34,12 +34,20 @@ void	Server::handler()
     // int                     address_read_len = sizeof(address_read);
     long	valread;
 
-	const char *temp_message = "HTTP/1.1 404 OK\nContent-Type: text/html\nContent-Length: 100\n\n\
+	const char *temp_message = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 100\n\n\
 		<!DOCTYPE html>\
 		<html>\
 		<body>\
 			<h1>My First fafafafafHeadifafng</h1>\
 			<p>My first paragraph.</p>\
+		</body>\
+		</html>";
+
+	const char *err_msg = "HTTP/1.1 404 \nContent-Type: text/html\n\n\
+		<!DOCTYPE html>\
+		<html>\
+		<body>\
+			<h1>404 Not Found</h1>\
 		</body>\
 		</html>";
 
@@ -52,12 +60,22 @@ void	Server::handler()
             continue;
         else
         {
+            // it->second += buffer;
             printf("[%s]\n",buffer );
             printf("-------------\n");
         }
-        // webserv::Request(string(buffer));
+        // check if buffer is fully read
+        // if so then close socket
 		// TODO: implement responder
-        send(it->first , temp_message , strlen(temp_message), MSG_OOB);
+        Request req((string(buffer)));
+        cout << "The type is " << req.type() << "\n";
+        if (req.type() == "GET")
+        {
+            cout << "Bro send error message" << strlen(err_msg) << "\n";
+            send(it->first , err_msg , strlen(err_msg), MSG_OOB);
+        }
+        else
+            send(it->first , temp_message , strlen(temp_message), MSG_OOB);
         printf("------------------Hello message sent-------------------\n");
         close(it->first);
         _erase_list.push_back(it->first);
@@ -96,7 +114,7 @@ void Server::launch()
     }
     while(1)
     {
-        cout << "Final socket_fd open : " << fds[nfds - 1].fd << endl;
+        cout << "Final socket_fd's fd : " << fds[nfds - 1].fd << endl;
 		cout << "Total amount of socket_fds open : " << nfds << endl;
         printf("\n+++++++ Waiting for new connection ++++++++\n\n");
 		cout << _client_sockets.size() << " open sockets" << endl;

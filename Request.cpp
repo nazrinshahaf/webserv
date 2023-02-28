@@ -51,10 +51,10 @@ Request::Request(string request_string)
     while (request_string.find("\n") != request_string.npos)
     {
         string line = request_string.substr(0, request_string.find("\n"));
-        std::cout << line << std::endl;
+        // std::cout << line << std::endl;
         headers.push_back(line);
         request_string = request_string.substr(request_string.find("\n") + 1);
-        std::cout << request_string << std::endl;
+        // std::cout << request_string << std::endl;
     }
     // for (char *ptr = std::strtok((char *)request_string.c_str(), "\n"); ptr != NULL;  ptr = strtok(NULL, "\n"))
     // {
@@ -62,8 +62,8 @@ Request::Request(string request_string)
     //     std::cout << string(ptr) << std::endl;
     // }
 
-    for (std::vector<string>::iterator it = headers.begin(); it != headers.end(); it++)
-        std::cout << *it << std::endl;
+    // for (std::vector<string>::iterator it = headers.begin(); it != headers.end(); it++)
+    //     std::cout << *it << std::endl;
 
     _type = find_request_type(headers);
     std::cout << "REQUEST TYPE " << _type << std::endl;
