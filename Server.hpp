@@ -37,18 +37,20 @@ namespace webserv
 			Server();
 			~Server();
 
-			void		add_socket(const int &domain, const int &service, const int &protocol, const int &port, const u_long &interface, const int &backlog);
-			void	launch(void);
+			void		add_socket(const int &domain, const int &service,
+									const int &protocol, const int &port,
+									const u_long &interface, const int &backlog);
+			void		launch(void);
 
 			// ListeningSocket	*get_listening_socket(void) const;
 
 		private:
 			std::vector<ListeningSocket>		_sockets;
 			int									_new_socket;
-    		std::map<int, std::string>    		_active_sockets;
+    		std::map<int, std::string>    		_client_sockets;
     		std::vector<int>					_erase_list;
 
-			void	acceptor(struct pollfd *fds);
+			void	acceptor(const int &fd);
 			void	handler(void);
 			void	responder(void);
 

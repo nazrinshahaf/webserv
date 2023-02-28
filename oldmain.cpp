@@ -1,8 +1,10 @@
 #include "BaseConfig.hpp"
+#include "ListeningSocket.hpp"
 #include "ServerBaseConfig.hpp"
 #include "ServerConfig.hpp"
 #include "ServerConfigParser.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
+#include <malloc/_malloc.h>
 #include <utility>
 #include <vector>
 #define PORT 80
@@ -117,67 +119,6 @@ int test_basic_server()
 //	return (0);
 //}
 
-void	test_parser()
-{
-	//cout << "Testing Constructor with ifstream" << endl;
-	//{
-	//	std::ifstream	conf_file("./test.conf");
-	//	webserv::ServerConfigParser	parsed_config(conf_file);
-	//}
-
-	//cout << "Testing Constructor with ifstream" << endl;
-	//{
-	//	string			conf_str;
-
-	//	if (conf_file)
-	//	{
-	//		std::ostringstream ss;
-	//		ss << conf_file.rdbuf();
-	//		conf_str = ss.str();
-	//	}
-
-	//	webserv::ServerConfigParser	parsed_config(conf_str);
-	//}
-	
-	{
-		std::ifstream	conf_file("./test.conf");
-		webserv::ServerConfigParser	config_parser(conf_file);
-
-		config_parser.parse_config();
-		//pair<ServerConfigParser::const_iterator_type, ServerConfigParser::const_iterator_type> range = config_parser.find_values("server");
-		//for (ServerConfigParser::const_iterator_type it = range.first; it != range.second; it++)
-		//{
-		//	if (it->first == "server")
-		//	{
-		//		ServerConfig sc = dynamic_cast<ServerConfig&>(*(it->second));
-		//		pair<ServerConfig::const_iterator_type, ServerConfig::const_iterator_type> range2 = sc.find_values("listen");
-
-		//		cout << it->first << endl;
-		//		for (ServerConfig::const_iterator_type sit = range2.first; sit != range2.second; sit++)
-		//		{
-		//			cout << "\t" << sit->first << endl;
-		//			ServerNormalDirectiveConfig nd = dynamic_cast<ServerNormalDirectiveConfig&>(*(sit->second));
-		//			cout << "\t\t" << nd.get_value() << endl;
-		//		}
-		//	}
-		//}
-	}
-}
-
-void	test_parser_abs()
-{
-	std::map<string, ServerBaseConfig*> config;
-
-	ServerNormalDirectiveConfig *test = new ServerNormalDirectiveConfig();
-
-	test->set_config("val1", "val2");
-
-	//cout << test->get_value() << "," << test->get_value2() << endl;
-
-	config.insert(std::make_pair("key", test));
-
-}
-
 //struct B {
 //  virtual B* get_base() { return new B; }
 //  virtual ~B() { }
@@ -234,20 +175,8 @@ void	test_parser_abs()
 //	test->set_config(std::string("lmao"));
 //}
 
-int	main()
+void	test_parser()
 {
-	test_basic_server();
-	//test_multimap();
-	// test_parser();
-	//test_parser_abs();
-
-	return (0);
-}
-
-
-	//	webserv::ServerConfigParser	parsed_config(conf_str);
-	//}
-	
 	{
 		std::ifstream	conf_file("./test.conf");
 		webserv::ServerConfigParser	config_parser(conf_file);
@@ -347,7 +276,39 @@ void	test_socket()
 {
 	//Socket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY);
 	//BindingSocket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY);
-	ListeningSocket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);
+	ListeningSocket ls(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);
+    int server_fd = ls.get_sock();
+	int new_socket;
+	long valread;
+    struct sockaddr_in address = ls.get_address();
+    int addrlen = sizeof(address);
+    
+    const char *hello = "HTTP/1.1 404 OK\nContent-Type: text/html\nContent-Length: 100\n\n\
+		<!DOCTYPE html>\
+		<html>\
+		<body>\
+			<h1>My First Heading</h1>\
+			<p>My first paragraph.</p>\
+		</body>\
+		</html>";
+
+    while(1)
+    {
+        printf("\n+++++++ Waiting for new connection ++++++++\n\n");
+        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
+        {
+            perror("In accept");
+            exit(EXIT_FAILURE);
+        }
+        char buffer[30000] = {0};
+        valread = read( new_socket , buffer, 30000);
+		if (valread > 0)
+			printf("%s\n",buffer );
+        write(new_socket , hello , strlen(hello));
+        printf("------------------Hello message sent-------------------\n");
+        close(new_socket);
+		// close(server_fd); to close server and not block port
+    }
 }
 
 int	main()

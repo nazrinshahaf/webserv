@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <iostream>
 #include <poll.h>
-#define PORT 81
 #include "Request.hpp"
 #include <fcntl.h>
 #include "Server.hpp"
@@ -21,8 +20,9 @@ void start_server()
     webserv::Server server;
 
     //ListeningSocket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);
-    server.add_socket(AF_INET, SOCK_STREAM, 0, 8001, INADDR_ANY, 10);
-    // server.add_socket(AF_INET, SOCK_STREAM, 0, 91, INADDR_ANY, 10);
+    //server.add_socket(AF_INET, SOCK_STREAM, 0, 8001, INADDR_ANY, 10);
+    server.add_socket(AF_INET, SOCK_STREAM, 0, 91, INADDR_ANY, 10);
+    server.add_socket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);
     server.launch();
     // server.add_socket(AF_INET, SOCK_STREAM, 0, 81, INADDR_ANY, 10);
 

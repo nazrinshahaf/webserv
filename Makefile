@@ -30,6 +30,10 @@ leaks: re
 test: re
 	$(re) ./$(NAME)
 
+old: clean
+	$(CC) $(CFLAGS) $(SANITIZE) ./oldmain.cpp $(SRC) -o $(NAME)
+	./$(NAME)
+
 san: fclean 
 	$(fclean)
 	$(CC) $(CFLAGS) $(SANITIZE) $(MAIN) $(SRC) -o $(NAME)
