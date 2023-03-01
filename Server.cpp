@@ -157,7 +157,6 @@ void	Server::launch()
         fcntl(fds[i].fd, F_SETFL, O_NONBLOCK); //set filestatus to non-blocking
 		log(DEBUG, (string("Server socket open with fd ") + to_string(fds[i].fd)));
     }
-    cout << YELLOW << "Total amount of socket_fds open : " << nfds << RESET << endl;
     while(1)
     {
 		log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size())));
