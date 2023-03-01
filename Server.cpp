@@ -117,10 +117,11 @@ void	Server::handler()
             entireText += line;
         }
         myfile.close();
-        send(it->first , entireText.c_str() , strlen(entireText.c_str()), MSG_OOB);
+        send(it->first , entireText.c_str() , strlen(entireText.c_str()) + 1, MSG_OOB);
         // webserv::Request(string(buffer));
 		// TODO: implement responder
 		log(DEBUG, "------ Message Sent to Client ------ ");
+        printf("------------------Hello message sent-------------------\n");
         close(it->first);
         _erase_list.push_back(it->first);
     }
