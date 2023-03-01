@@ -2,7 +2,6 @@
 # define LISTENINGSOCKET_HPP
 
 #include "BindingSocket.hpp"
-#include "ServerBaseConfig.hpp"
 #include "ServerConfig.hpp"
 
 /*
@@ -19,7 +18,8 @@ namespace webserv
 	{
 		public:
 
-			typedef	struct sockaddr_in	sockaddr_t;
+			typedef	struct sockaddr_in				sockaddr_t;
+			typedef ServerConfig					config_t;
 
 			/*
 			 * Listening Socket Default Constructor.
@@ -47,15 +47,18 @@ namespace webserv
 			ListeningSocket() {};
 
 			ListeningSocket(const int &domain, const int &service, const int &protocol,
-					const int &port, const u_long &interface, const int &backlog);
+					const int &port, const u_long &interface, const int &backlog,
+					const ServerConfig &config = ServerConfig());
+					//const string &test = string());
 			~ListeningSocket();
 
 			void	start_listening(void);
 			int		accept_connections(void) const;
 
 		private:
-			int								_backlog;
-			int								_listening;
+			int				_backlog;
+			int				_listening;
+			ServerConfig	_config;
 	};
 
 }

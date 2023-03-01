@@ -7,9 +7,10 @@ using std::endl;
 
 ListeningSocket::ListeningSocket(const int &domain, const int &service,
 		const int &protocol, const int &port, const u_long &interface,
-		const int &backlog) :
+		const int &backlog, const ServerConfig &config) :
+		//const int &backlog, const string &test) :
 			BindingSocket(domain, service, protocol, port, interface),
-			_backlog(backlog)
+			_backlog(backlog), _config(config)
 {
 #ifdef PRINT_MSG
 	cout << GREEN "Listening Default Constructor called" RESET << endl;

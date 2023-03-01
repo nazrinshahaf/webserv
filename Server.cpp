@@ -6,10 +6,12 @@
 #include "ServerConfigParser.hpp"
 #include "colours.h"
 
+#include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <fstream>
 #include <netinet/in.h>
+#include <ostream>
 #include <poll.h>
 #include <fcntl.h>
 #include <string>
@@ -34,17 +36,18 @@ Server::Server(const ServerConfigParser &config) : _config(config)
 	cout << GREEN "Server Assignment Constructor Called" RESET << endl;
 #endif
 	//comment this out when testing.
-	pair<ServerConfigParser::cit_t, ServerConfigParser::cit_t> range = _config.find_values("server");
-	for (ServerConfigParser::cit_t it = range.first; it != range.second; it++)
+	pair<ServerConfigParser::cit_t, ServerConfigParser::cit_t> config_block_range = _config.find_values("server");
+	for (ServerConfigParser::cit_t config_in_block = config_block_range.first;
+			config_in_block != config_block_range.second; config_in_block++)
 	{
-		ServerConfig sc = dynamic_cast<ServerConfig&>(*(it->second));
-		pair<ServerConfig::cit_t, ServerConfig::cit_t> range2 = sc.find_values("listen");
+		ServerConfig server_config = dynamic_cast<ServerConfig&>(*(config_in_block->second));
+		pair<ServerConfig::cit_t, ServerConfig::cit_t> server_block_range = server_config.find_values("listen");
 
-		for (ServerConfig::cit_t sit = range2.first; sit != range2.second; sit++)
+		for (ServerConfig::cit_t sit = server_block_range.first; sit != server_block_range.second; sit++)
 		{
 			ServerNormalDirectiveConfig nd = dynamic_cast<ServerNormalDirectiveConfig&>(*(sit->second));
-			_sockets.push_back(ListeningSocket(AF_INET, SOCK_STREAM, 0, std::stoi(nd.get_value()), INADDR_ANY, 10));
-			log(INFO, string("Server open at port ") + nd.get_value(), 2, sc);
+			_sockets.push_back(ListeningSocket(AF_INET, SOCK_STREAM, 0, std::stoi(nd.get_value()), INADDR_ANY, 10, server_config));
+			log(INFO, string("Server open at port ") + nd.get_value(), 2, server_config);
 		}
 	}
 	//cout << _config << endl;
@@ -154,15 +157,28 @@ void	Server::launch()
  *	2 = print to both
  * */
 
+void	print_time(std::ostream &stream)
+{
+	std::time_t t = std::time(0);
+	std::tm*	now = std::localtime(&t);
+	stream << " " << (now->tm_year + 1900) << '-'
+		<< std::setfill('0')<< std::setw(2) << (now->tm_mon + 1) << '-'
+		<< std::setfill('0')<< std::setw(2) << now->tm_mday << " "
+		<< std::setfill('0')<< std::setw(2) << now->tm_hour << ":"
+		<< std::setfill('0')<< std::setw(2) << now->tm_min << ":"
+		<< std::setfill('0')<< std::setw(2) << now->tm_sec<< " - ";
+}
+
 void	Server::log(const log_level &level, const string &log_msg, const int &log_to_file, ServerConfig const &server) const
 {
-	log_level		overall_log_level = DEBUG;
+	log_level		base_log_level = DEBUG;
 	std::fstream	log_file;
 
 	if (log_to_file >= 1) //opening file if log_to_file is set to 1 or 2
 	{
 		pair<ServerConfig::cit_t, ServerConfig::cit_t> pair = server.find_values("error_log");
 		ServerNormalDirectiveConfig nd = dynamic_cast<ServerNormalDirectiveConfig&>(*(pair.first->second));
+
 		log_file.open(nd.get_value(), std::ios::app); //append mode
 		if (!log_file)
 			cout << "throw error_log file cant be opened" << endl; //idk how to handle if a file cant be opened
@@ -170,22 +186,19 @@ void	Server::log(const log_level &level, const string &log_msg, const int &log_t
 		std::transform(temp_log_level.begin(), temp_log_level.end(), temp_log_level.begin(), ::toupper); //convert to uppercase
 
 		if (temp_log_level == "DEBUG") //no switch case for string 
-			overall_log_level = DEBUG;
+			base_log_level = DEBUG;
 		else if (temp_log_level == "INFO")
-			overall_log_level = INFO;
+			base_log_level = INFO;
 		else if (temp_log_level == "WARN")
-			overall_log_level = WARN;
+			base_log_level = WARN;
 		else if (temp_log_level == "ERROR")
-			overall_log_level = ERROR;
+			base_log_level = ERROR;
 		else
 			cout << "throw invalid error log format" << endl;
 	}
 
-	if (level < overall_log_level)
+	if (level < base_log_level)
 		return ;
-
-	std::time_t t = std::time(0);
-	std::tm*	now = std::localtime(&t);
 
 	switch(level)
 	{
@@ -220,29 +233,14 @@ void	Server::log(const log_level &level, const string &log_msg, const int &log_t
 	switch (log_to_file) //can change all the print time to a function
 	{
 		case 2:
-			cout << " " << (now->tm_year + 1900) << '-'
-				<< std::setfill('0')<< std::setw(2) << (now->tm_mon + 1) << '-'
-				<< std::setfill('0')<< std::setw(2) << now->tm_mday << " "
-				<< std::setfill('0')<< std::setw(2) << now->tm_hour << ":"
-				<< std::setfill('0')<< std::setw(2) << now->tm_min << ":"
-				<< std::setfill('0')<< std::setw(2) << now->tm_sec<< " - ";
+			print_time(cout);
 			cout << log_msg << endl;
 		case 1:
-			log_file << " " << (now->tm_year + 1900) << '-'
-				<< std::setfill('0')<< std::setw(2) << (now->tm_mon + 1) << '-'
-				<< std::setfill('0')<< std::setw(2) << now->tm_mday << " "
-				<< std::setfill('0')<< std::setw(2) << now->tm_hour << ":"
-				<< std::setfill('0')<< std::setw(2) << now->tm_min << ":"
-				<< std::setfill('0')<< std::setw(2) << now->tm_sec<< " - ";
+			print_time(log_file);
 			log_file << log_msg << endl;
 			break;
 		case 0:
-			cout << " " << (now->tm_year + 1900) << '-'
-				<< std::setfill('0')<< std::setw(2) << (now->tm_mon + 1) << '-'
-				<< std::setfill('0')<< std::setw(2) << now->tm_mday << " "
-				<< std::setfill('0')<< std::setw(2) << now->tm_hour << ":"
-				<< std::setfill('0')<< std::setw(2) << now->tm_min << ":"
-				<< std::setfill('0')<< std::setw(2) << now->tm_sec<< " - ";
+			print_time(cout);
 			cout << log_msg << endl;
 	}
 	std::setfill(prev_fill);
