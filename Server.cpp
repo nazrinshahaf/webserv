@@ -80,7 +80,8 @@ void	Server::handler()
 	// 		<p>My first paragraph.</p>\
 	// 	</body>\
 	// 	</html>";
-	// const char *temp_message = "HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 13\n\nHello world!";
+	const char *header = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n";
+	const char *header_404 = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
 
     // const char *err_msg = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n<!DOCTYPE html><html><body><h1>404 Not Found</h1></body></html>";
 
@@ -104,18 +105,19 @@ void	Server::handler()
         std::ifstream myfile;
         string entireText;
         string line;
-
         if (req.path() == "/")
             myfile.open("public/index.html");
         else
             myfile.open("public" + req.path());
         if (!myfile)
+		{
+			entireText += header_404;
             myfile.open("public/404.html");
+		}
+		else
+			entireText += header;
         while (std::getline(myfile, line))
-        {
-            entireText += '\n';
             entireText += line;
-        }
         myfile.close();
         send(it->first , entireText.c_str() , strlen(entireText.c_str()) + 1, MSG_OOB);
         // webserv::Request(string(buffer));
