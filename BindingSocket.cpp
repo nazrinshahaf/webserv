@@ -1,5 +1,6 @@
 #include "BindingSocket.hpp"
 #include "Socket.hpp"
+#include "colours.h"
 
 using namespace webserv;
 
@@ -22,7 +23,7 @@ BindingSocket::BindingSocket(const int &domain, const int &service,
 BindingSocket::~BindingSocket()
 {
 #ifdef PRINT_MSG
-	cout << RED "Binding Socket Destructor called" REEST << endl;
+	cout << RED "Binding Socket Destructor called" RESET << endl;
 #endif // !PRINT_MSG
 }
 

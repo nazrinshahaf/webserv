@@ -7,9 +7,10 @@ using std::endl;
 
 ListeningSocket::ListeningSocket(const int &domain, const int &service,
 		const int &protocol, const int &port, const u_long &interface,
-		const int &backlog) :
+		const int &backlog, const ServerConfig &config) :
+		//const int &backlog, const string &test) :
 			BindingSocket(domain, service, protocol, port, interface),
-			_backlog(backlog)
+			_backlog(backlog), _config(config)
 {
 #ifdef PRINT_MSG
 	cout << GREEN "Listening Default Constructor called" RESET << endl;
@@ -29,4 +30,14 @@ ListeningSocket::~ListeningSocket()
 void	ListeningSocket::start_listening(void)
 {
 	_listening = listen(get_sock(), _backlog);
+}
+
+int		ListeningSocket::accept_connections(void) const
+{
+	int	client_socket_fd;
+	//Socket::sockaddr_t	address = get_address();
+
+	//client_socket_fd = accept(get_sock(), (struct sockaddr *)&address, sizeof(struct sockaddr)); //i have to change get_address() to a pointer
+	client_socket_fd = accept(get_sock(), NULL, NULL);
+	return (client_socket_fd);
 }

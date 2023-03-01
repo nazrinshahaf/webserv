@@ -43,11 +43,13 @@ void		Socket::test_connection(const int &sock_fd, const std::string &fd_name) co
 {
 	if (sock_fd < 0)
 	{
-		cerr << "Failed to connect. "<< endl;
+		cerr << fd_name << " failed to connect." << endl;
 		exit(EXIT_FAILURE); //maybe throw instead of exit here.
 	}
+#ifdef PRINT_MSG
 	else
 		cout << GREEN << fd_name << " socket fd successfully created" RESET << endl;
+#endif // DEBUG
 }
 
 Socket::sockaddr_t	Socket::get_address() const

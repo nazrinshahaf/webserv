@@ -16,10 +16,11 @@ ServerConfig::ServerConfig()
 #endif
 }
 
-ServerConfig::ServerConfig(const ServerConfig &to_copy) :_server_config(to_copy._server_config)
+ServerConfig::ServerConfig(const ServerConfig &to_copy) :
+	_server_config(to_copy._server_config)
 {
 #ifdef PRINT_MSG
-	cout << "ServerConfig Default Constructor called" << endl;
+	cout << "ServerConfig Copy Constructor called" << endl;
 #endif
 }
 

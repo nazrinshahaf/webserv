@@ -62,6 +62,15 @@ namespace webserv
 			ServerConfigParser(std::ifstream &config_file);
 
 			/*
+			 * ServerConfigParser Copy constructor.
+			 *
+			 * @param 'to_copy' : the other ServerConfigParser
+			 *	to be copied.
+			 * */
+
+			ServerConfigParser(const ServerConfigParser &to_copy);
+
+			/*
 			 * ServerConfigParser Destructor.
 			 * */
 
@@ -74,6 +83,14 @@ namespace webserv
 			 * */
 
 			void		parse_config(void);
+
+			/*
+			 * validate_config.
+			 * Validates the _config to ensure that all data passed into
+			 * server will be in the appropriate format.
+			 * */
+
+			void		validate_config(void);
 
 			const map_type	&get_config() const;
 
@@ -208,6 +225,11 @@ namespace webserv
 			 * */
 
 			void		initialize_valid_directives(const char **directives, std::set<string> *set, size_t len);
+
+
+			void		validate_listen(const ServerNormalDirectiveConfig &directive);
+			void		validate_error_log(const ServerNormalDirectiveConfig &directive);
+			void		validate_error_page(const ServerNormalDirectiveConfig &directive);
 
 			std::set<string>	_valid_base_directives;
 			std::set<string>	_valid_server_normal_directives;
