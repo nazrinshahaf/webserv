@@ -6,6 +6,7 @@
 #include "ServerConfigParser.hpp"
 #include "colours.h"
 
+#include <iomanip>
 #include <iostream>
 #include <fstream>
 #include <netinet/in.h>
@@ -130,11 +131,9 @@ void	Server::launch()
     }
     while(1)
     {
-        //cout << "Final socket_fd open : " << fds[nfds - 1].fd << endl;
 		log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size())));
 		for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); it++)
 			log(DEBUG, (string("client fd[") + to_string(it->first) + "] is open"));
-        //printf("\n+++++++ Waiting for new connection ++++++++\n\n");
         // Run this only if a socket is queued (poll) OR we have open sockets that have not yet written bytes
         if (poll(fds, nfds, 1000) > 0 || _client_sockets.size() > 0)
         {
@@ -145,8 +144,6 @@ void	Server::launch()
 				handler();
 			}
         }
-        //else
-        //    cout << "waiting..." << endl;
     }
 }
 
@@ -162,13 +159,13 @@ void	Server::log(const log_level &level, const string &log_msg, const int &log_t
 	log_level		overall_log_level = DEBUG;
 	std::fstream	log_file;
 
-	if (log_to_file >= 1)
+	if (log_to_file >= 1) //opening file if log_to_file is set to 1 or 2
 	{
 		pair<ServerConfig::cit_t, ServerConfig::cit_t> pair = server.find_values("error_log");
 		ServerNormalDirectiveConfig nd = dynamic_cast<ServerNormalDirectiveConfig&>(*(pair.first->second));
 		log_file.open(nd.get_value(), std::ios::app); //append mode
 		if (!log_file)
-			cout << "throw error_log file cant be opened" << endl;
+			cout << "throw error_log file cant be opened" << endl; //idk how to handle if a file cant be opened
 		string	temp_log_level = nd.get_value2();
 		std::transform(temp_log_level.begin(), temp_log_level.end(), temp_log_level.begin(), ::toupper); //convert to uppercase
 
@@ -219,25 +216,35 @@ void	Server::log(const log_level &level, const string &log_msg, const int &log_t
 		break;
 	}
 
-	switch (log_to_file)
+	char prev_fill = std::cout.fill();
+	switch (log_to_file) //can change all the print time to a function
 	{
 		case 2:
-			cout << " " << (now->tm_year + 1900) << '-' << (now->tm_mon + 1) << '-'
-				<<  now->tm_mday << " " <<  now->tm_hour << ":"
-				<<  now->tm_min << ":" <<  now->tm_sec<< " - ";
+			cout << " " << (now->tm_year + 1900) << '-'
+				<< std::setfill('0')<< std::setw(2) << (now->tm_mon + 1) << '-'
+				<< std::setfill('0')<< std::setw(2) << now->tm_mday << " "
+				<< std::setfill('0')<< std::setw(2) << now->tm_hour << ":"
+				<< std::setfill('0')<< std::setw(2) << now->tm_min << ":"
+				<< std::setfill('0')<< std::setw(2) << now->tm_sec<< " - ";
 			cout << log_msg << endl;
 		case 1:
-			log_file << " " << (now->tm_year + 1900) << '-' << (now->tm_mon + 1) << '-'
-				<<  now->tm_mday << " " <<  now->tm_hour << ":"
-				<<  now->tm_min << ":" <<  now->tm_sec<< " - ";
+			log_file << " " << (now->tm_year + 1900) << '-'
+				<< std::setfill('0')<< std::setw(2) << (now->tm_mon + 1) << '-'
+				<< std::setfill('0')<< std::setw(2) << now->tm_mday << " "
+				<< std::setfill('0')<< std::setw(2) << now->tm_hour << ":"
+				<< std::setfill('0')<< std::setw(2) << now->tm_min << ":"
+				<< std::setfill('0')<< std::setw(2) << now->tm_sec<< " - ";
 			log_file << log_msg << endl;
 			break;
 		case 0:
 			cout << " " << (now->tm_year + 1900) << '-'
-				<< (now->tm_mon + 1) << '-' <<  now->tm_mday << " "
-				<<  now->tm_hour << ":" <<  now->tm_min << ":"
-				<<  now->tm_sec<< " - ";
+				<< std::setfill('0')<< std::setw(2) << (now->tm_mon + 1) << '-'
+				<< std::setfill('0')<< std::setw(2) << now->tm_mday << " "
+				<< std::setfill('0')<< std::setw(2) << now->tm_hour << ":"
+				<< std::setfill('0')<< std::setw(2) << now->tm_min << ":"
+				<< std::setfill('0')<< std::setw(2) << now->tm_sec<< " - ";
 			cout << log_msg << endl;
 	}
+	std::setfill(prev_fill);
 	log_file.close();
 }
