@@ -44,7 +44,7 @@ void Request::find_request_path() {
     if (positions.size() != 2)
         _path = string("");
     else
-        _path = first_line.substr(positions[0], positions[1] - positions[0]);
+        _path = first_line.substr(first_line.find("/"), positions[1] - positions[0] - 1); 
 }
 
 void Request::find_request_protocol_version() {

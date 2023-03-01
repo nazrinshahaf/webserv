@@ -19,10 +19,9 @@ void start_server()
 {
     webserv::Server server;
 
-    //ListeningSocket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);
-    //server.add_socket(AF_INET, SOCK_STREAM, 0, 8001, INADDR_ANY, 10);
-    server.add_socket(AF_INET, SOCK_STREAM, 0, 8000, INADDR_ANY, 10);
-    // server.add_socket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);
+    server.add_socket(AF_INET, SOCK_STREAM, 0, 8001, INADDR_ANY, 10);
+    // server.add_socket(AF_INET, SOCK_STREAM, 0, 8000, INADDR_ANY, 10);
+    server.add_socket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);
     server.launch();
     // server.add_socket(AF_INET, SOCK_STREAM, 0, 81, INADDR_ANY, 10);
 
