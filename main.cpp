@@ -24,6 +24,7 @@ void start_server()
 	webserv::ServerConfigParser	config_parser(conf_file);
 
 	config_parser.parse_config();
+	config_parser.validate_config();
 
     Server				server(config_parser);
     //ListeningSocket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);

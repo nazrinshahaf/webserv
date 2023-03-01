@@ -4,6 +4,7 @@
 #include "ServerConfig.hpp"
 #include "ServerLocationDirectiveConfig.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
+#include <cctype>
 #include <cstddef>
 #include <map>
 #include <string>
@@ -153,6 +154,39 @@ void ServerConfigParser::parse_config(void)
 		}
 	}
 	//cout << *this << endl;
+}
+
+void	ServerConfigParser::validate_config(void)
+{
+	for (ServerConfigParser::cit_t config_block = _config.begin(); config_block != _config.end(); config_block++)
+	{
+		if (config_block->first == "server")
+		{
+			ServerConfig					server_config = dynamic_cast<ServerConfig&>(*config_block->second);
+			ServerConfig::map_type			server_map = server_config.get_server_config();
+
+			for (ServerConfig::cit_t server_line = server_map.begin(); server_line != server_map.end(); server_line++)
+			{
+				int	directive_type = is_valid_server_normal_directive(server_line->first);
+				if (directive_type == 1 || directive_type == 2)
+				{
+					ServerNormalDirectiveConfig	normal_directive =
+						dynamic_cast<ServerNormalDirectiveConfig&>(*server_line->second);
+					if (server_line->first == "listen")
+						validate_listen(normal_directive);
+					if (server_line->first == "error_log")
+						validate_error_log(normal_directive);
+					if (server_line->first == "error_page")
+						validate_error_page(normal_directive);
+				}
+				else
+				{
+					ServerLocationDirectiveConfig	location_directive =
+						dynamic_cast<ServerLocationDirectiveConfig&>(*server_line->second);
+				}
+			}
+		}
+	}
 }
 
 const ServerConfigParser::map_type&	ServerConfigParser::get_config() const
@@ -484,6 +518,50 @@ void		ServerConfigParser::initialize_valid_directives(const char **directives, s
 	for (size_t i = 0; i < len; ++i)
 		set->insert((directives[i]));
 }
+
+// =========================== validation ==================================
+
+int			is_string_num(const string &str)
+{
+    string::const_iterator	c = str.begin();
+
+    while (c != str.end() && std::isdigit(*c))
+		++c;
+    return (!str.empty() && c == str.end());
+}
+
+//int			is_string_path(const string &str)
+//{
+//	for (string::const_iterator c = str.begin(); c != str.end(); c++)
+//	{
+//		if (!std::isdigit(*c) && *c != '/' && *c != '.' && !std::isalpha(*c))
+//			return (0);
+//	}
+//	return (1);
+//}
+
+void		ServerConfigParser::validate_listen(const ServerNormalDirectiveConfig &directive)
+{
+	if (!is_string_num(directive.get_value()))
+		cout << RED "throw Invalid character found in listen directive" RESET << endl;
+}
+
+void		ServerConfigParser::validate_error_log(const ServerNormalDirectiveConfig &directive)
+{
+	string	debug_level = directive.get_value2();
+
+	std::transform(debug_level.begin(), debug_level.end(), debug_level.begin(), ::toupper); //convert to uppercase
+	if (debug_level != "DEBUG" && debug_level != "INFO" && debug_level != "WARN" && debug_level != "ERROR")
+		cout << RED "throw Invalid debug level" RESET << endl;
+}
+
+void		ServerConfigParser::validate_error_page(const ServerNormalDirectiveConfig &directive)
+{
+	if (!is_string_num(directive.get_value()))
+		cout << RED "throw Invalid character found in error_page number directive" RESET << endl;
+}
+
+// =========================== ostream overload ==================================
 
 std::ostream&	operator<<(std::ostream& os, const ServerConfigParser &config)
 {

@@ -90,12 +90,11 @@ void	Server::handler()
         else
         {
             printf("[%s]\n", buffer);
-            printf("-------------\n");
         }
         // webserv::Request(string(buffer));
 		// TODO: implement responder
         send(it->first , temp_message , strlen(temp_message), MSG_OOB);
-        printf("------------------Hello message sent-------------------\n");
+		log(DEBUG, "------ Message Sent to Client ------ ");
         close(it->first);
         _erase_list.push_back(it->first);
     }
