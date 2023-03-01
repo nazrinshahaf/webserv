@@ -85,6 +85,8 @@ Request::Request(string request_string)
         _header_lines.push_back(line);
         request_string = request_string.substr(request_string.find("\n") + 1);
     }
+    if (_header_lines.size() == 0)
+        throw std::exception();
     find_request_path();
     find_request_protocol_version();
     find_request_type();
@@ -99,6 +101,20 @@ Request::~Request()
 }
 
 const std::map<string, string> &Request::headers() const { return _headers; }
+
+const string    Request::to_str() const
+{
+    string ret;
+
+    ret = string(CYAN) + "REQUEST TYPE: " + string(RESET) + string(YELLOW) + type() + string(RESET) + "\n"\
+    + string(CYAN) + "REQUEST PATH: " + string(RESET) + string(YELLOW) + path() + string(RESET) + "\n"\
+    + string(CYAN) + "REQUEST PROTOCOL VERSION: " + string(RESET) + string(YELLOW) + protocol_version() + string(RESET) + "\n";
+    for (std::map<string, string>::const_iterator it = headers().begin(); it != headers().end(); it++)
+    {
+        ret += string(CYAN) + it->first + ": " + string(RESET) + string(YELLOW) + it->second + string(RESET) + "\n";
+    }
+    return (ret);
+}
 
 std::ostream &operator<<(std::ostream &os, const webserv::Request &request)
 {

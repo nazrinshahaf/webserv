@@ -72,14 +72,7 @@ void	Server::handler()
     // int                     address_read_len = sizeof(address_read);
     long	valread;
 
-	// const char *temp_message = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 119\r\n\r\n\
-	// 	<!DOCTYPE html>\
-	// 	<html>\
-	// 	<body>\
-	// 		<h1>My First fafafafafHeadifafng</h1>\
-	// 		<p>My first paragraph.</p>\
-	// 	</body>\
-	// 	</html>";
+	const char *temp_message = "HTTP/1.1 500 FUCK OFF\r\nContent-Type: text/html\r\nContent-Length: 119\r\n\r\n";
 	// const char *temp_message = "HTTP/1.1 200 OK\nContent-Type: text/plain\nContent-Length: 13\n\nHello world!";
 
     // const char *err_msg = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n<!DOCTYPE html><html><body><h1>404 Not Found</h1></body></html>";
@@ -92,37 +85,47 @@ void	Server::handler()
         if (valread < 0)
             continue;
         it->second += buffer;
-        Request req((string(buffer)));
-        // printf("[%s]\n",buffer );
-        // printf("-------------\n");
-        // check if buffer is fully read
-        // if so then close socket
-		// TODO: implement responder AND COVERT IT TO OOP
-        cout << req << "\n";
-        cout << "The req.path is |" << req.path() << "|\n";
-
-        std::ifstream myfile;
-        string entireText;
-        string line;
-
-        if (req.path() == "/")
-            myfile.open("public/index.html");
-        else
-            myfile.open("public" + req.path());
-        if (!myfile)
-            myfile.open("public/404.html");
-        while (std::getline(myfile, line))
+        try
         {
-            entireText += '\n';
-            entireText += line;
+            Request req((string(buffer)));
+            // printf("[%s]\n",buffer );
+            // printf("-------------\n");
+            // check if buffer is fully read
+            // if so then close socket
+		    // TODO: implement responder AND COVERT IT TO OOP
+            log(DEBUG, req.to_str());
+            cout << "The req.path is |" << req.path() << "|\n";
+
+            std::ifstream myfile;
+            string entireText;
+            string line;
+
+            if (req.path() == "/")
+                myfile.open("public/index.html");
+            else
+                myfile.open("public" + req.path());
+            if (!myfile)
+                myfile.open("public/404.html");
+            while (std::getline(myfile, line))
+            {
+                entireText += '\n';
+                entireText += line;
+            }
+            myfile.close();
+            send(it->first , entireText.c_str() , strlen(entireText.c_str()), MSG_OOB);
+            // webserv::Request(string(buffer));
+		    // TODO: implement responder
+		    log(DEBUG, "------ Message Sent to Client ------ ");
+            close(it->first);
+            _erase_list.push_back(it->first);
         }
-        myfile.close();
-        send(it->first , entireText.c_str() , strlen(entireText.c_str()), MSG_OOB);
-        // webserv::Request(string(buffer));
-		// TODO: implement responder
-		log(DEBUG, "------ Message Sent to Client ------ ");
-        close(it->first);
-        _erase_list.push_back(it->first);
+        catch (...)
+        {
+            log(DEBUG, "ERROR: CONNECTION CLOSED WITHOUT DATA");
+            send(it->first , temp_message , strlen(temp_message), MSG_OOB);
+            close(it->first);
+            _erase_list.push_back(it->first);
+        }
     }
 	for (std::vector<int>::iterator it = _erase_list.begin(); it != _erase_list.end(); it++)
     	_client_sockets.erase(*it);

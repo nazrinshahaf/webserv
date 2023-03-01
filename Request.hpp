@@ -40,6 +40,7 @@ namespace webserv
 			const string 					&path() const;
 			const string 					&protocol_version() const;
 			const std::map<string, string>	&headers() const;
+			const string					to_str() const;
 
 			struct RequiredHeaderParamNotGivenException : public std::exception {
 			const char * what () const throw () {
