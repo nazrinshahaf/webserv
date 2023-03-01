@@ -80,13 +80,12 @@ void	Server::handler()
             entireText += line;
         }
         myfile.close();
-        // cout << "Bro send error message" << "\n";
         // cout << "==========" << endl;
         // cout << entireText << "| This is entire text\n";
         // cout << "==========" << endl;
         // cout << err_msg << "| This is err_msg text\n";
         // cout << "==========" << endl;
-        send(it->first , entireText.c_str() , strlen(entireText.c_str()), MSG_OOB);
+        send(it->first , entireText.c_str() , strlen(entireText.c_str()) + 1, MSG_OOB);
         printf("------------------Hello message sent-------------------\n");
         close(it->first);
         _erase_list.push_back(it->first);
