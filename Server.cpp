@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include "Request.hpp"
 #include <map>
+#include <fstream>
 
 using namespace webserv;
 using std::string;
@@ -34,22 +35,22 @@ void	Server::handler()
     // int                     address_read_len = sizeof(address_read);
     long	valread;
 
-	const char *temp_message = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 100\n\n\
-		<!DOCTYPE html>\
-		<html>\
-		<body>\
-			<h1>My First fafafafafHeadifafng</h1>\
-			<p>My first paragraph.</p>\
-		</body>\
-		</html>";
-
-	// const char *err_msg = "HTTP/1.1 404 \nContent-Type: text/html\n\n\
+	// const char *temp_message = "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 100\n\n\
 	// 	<!DOCTYPE html>\
 	// 	<html>\
 	// 	<body>\
-	// 		<h1>404 Not Found</h1>\
+	// 		<h1>My First fafafafafHeadifafng</h1>\
+	// 		<p>My first paragraph.</p>\
 	// 	</body>\
 	// 	</html>";
+
+	const char *err_msg = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n\
+		<!DOCTYPE html>\
+		<html>\
+		<body>\
+			<h1>404 Not Found</h1>\
+		</body>\
+		</html>";
 
     for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); it++)
     {
@@ -64,15 +65,28 @@ void	Server::handler()
         // printf("-------------\n");
         // check if buffer is fully read
         // if so then close socket
-		// TODO: implement responder
+		// TODO: implement responder AND COVERT IT TO OOP
         cout << req << "\n";
-        // if (req.type() == "GET")
-        // {
-            // cout << "Bro send error message" << strlen(err_msg) << "\n";
-            // send(it->first , err_msg , strlen(err_msg), MSG_OOB);
-        // }
-        // else
-        send(it->first , temp_message , strlen(temp_message), MSG_OOB);
+        // Seems there is a bug with EXTRA space (not sure if intended)
+        cout << "The req.path is |" << req.path() << "|\n";
+
+        std::ifstream myfile;
+        string entireText;
+        string line;
+
+        myfile.open("public/index.html");
+        while (std::getline(myfile, line))
+            entireText += line;
+        myfile.close();
+        // cout << entireText;
+        // TODO: ADD IF CANNOT OPEN, 404 html, else index      
+        if (req.path() != " /")
+        {
+            cout << "Bro send error message" << "\n";
+            send(it->first , err_msg , strlen(err_msg), MSG_OOB);
+        }
+        else
+            send(it->first , entireText.c_str() , strlen(entireText.c_str()), MSG_OOB);
         printf("------------------Hello message sent-------------------\n");
         close(it->first);
         _erase_list.push_back(it->first);
