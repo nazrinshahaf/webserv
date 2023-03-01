@@ -49,7 +49,7 @@ public:
 	~ListeningSocket();
 
 	void	start_listening(void);
-	int		accept_connections(void);
+	int		accept_connections(void) const;
 
 private:
 	int	_backlog;

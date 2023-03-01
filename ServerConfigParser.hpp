@@ -62,6 +62,15 @@ namespace webserv
 			ServerConfigParser(std::ifstream &config_file);
 
 			/*
+			 * ServerConfigParser Copy constructor.
+			 *
+			 * @param 'to_copy' : the other ServerConfigParser
+			 *	to be copied.
+			 * */
+
+			ServerConfigParser(const ServerConfigParser &to_copy);
+
+			/*
 			 * ServerConfigParser Destructor.
 			 * */
 

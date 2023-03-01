@@ -178,7 +178,7 @@ int test_basic_server()
 void	test_parser()
 {
 	{
-		std::ifstream	conf_file("./test.conf");
+		std::ifstream	conf_file("./webserv.conf");
 		webserv::ServerConfigParser	config_parser(conf_file);
 
 		config_parser.parse_config();
@@ -315,9 +315,9 @@ int	main()
 {
 	//test_basic_server();
 	//test_multimap();
-	//test_parser();
+	test_parser();
 	//test_parser_abs();
-	test_socket();
+	//test_socket();
 
 	return (0);
 }

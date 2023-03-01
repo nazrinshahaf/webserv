@@ -27,8 +27,10 @@ class Socket
 
 		typedef	struct sockaddr_in	sockaddr_t;
 
+		Socket() {};
+
 		/*
-		 * Socket Default Constructor.
+		 * Socket Fill Constructor.
 		 *
 		 * @param 'domain' : specifies the current domain or address family 
 		 *	that needs to be used.
@@ -46,7 +48,7 @@ class Socket
 		 * @note : more about protocol sockets
 		 * https://www.ibm.com/docs/en/aix/7.2?topic=protocols-socket
 		 * */
-		Socket() {};
+
 		Socket(const int &domain, const int &service, const int &protocol,
 				const int &port, const u_long &interface);
 		virtual ~Socket();
