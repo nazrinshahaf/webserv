@@ -155,18 +155,23 @@ void	Server::launch()
  *	0 = just print to stdout
  *	1 = print to file passed in by server
  *	2 = print to both
+ *
+ *	@note : idk what to if file if error in config do i exit out early or what.
  * */
 
 void	print_time(std::ostream &stream)
 {
 	std::time_t t = std::time(0);
 	std::tm*	now = std::localtime(&t);
+	char		prev_fill = std::cout.fill();
+
 	stream << " " << (now->tm_year + 1900) << '-'
 		<< std::setfill('0')<< std::setw(2) << (now->tm_mon + 1) << '-'
 		<< std::setfill('0')<< std::setw(2) << now->tm_mday << " "
 		<< std::setfill('0')<< std::setw(2) << now->tm_hour << ":"
 		<< std::setfill('0')<< std::setw(2) << now->tm_min << ":"
 		<< std::setfill('0')<< std::setw(2) << now->tm_sec<< " - ";
+	std::setfill(prev_fill);
 }
 
 void	Server::log(const log_level &level, const string &log_msg, const int &log_to_file, ServerConfig const &server) const
@@ -181,7 +186,10 @@ void	Server::log(const log_level &level, const string &log_msg, const int &log_t
 
 		log_file.open(nd.get_value(), std::ios::app); //append mode
 		if (!log_file)
-			cout << "throw error_log file cant be opened" << endl; //idk how to handle if a file cant be opened
+		{
+			log(ERROR, "Cant write to " + nd.get_value()); //file permisions can prob just continue on
+			return;
+		}
 		string	temp_log_level = nd.get_value2();
 		std::transform(temp_log_level.begin(), temp_log_level.end(), temp_log_level.begin(), ::toupper); //convert to uppercase
 
@@ -194,7 +202,10 @@ void	Server::log(const log_level &level, const string &log_msg, const int &log_t
 		else if (temp_log_level == "ERROR")
 			base_log_level = ERROR;
 		else
-			cout << "throw invalid error log format" << endl;
+		{
+			log(ERROR, "Invalid error log format"); //prob need to exit out early if error in config. handle validity somwhere else??
+			return ; 
+		}
 	}
 
 	if (level < base_log_level)
@@ -204,7 +215,7 @@ void	Server::log(const log_level &level, const string &log_msg, const int &log_t
 	{
 		case 0:
 			if (log_to_file != 1)
-				cout << MAGENTA "[DEBUG]\t" RESET;
+				cout << GREEN "[DEBUG]\t" RESET;
 			if (log_to_file >= 1)
 				log_file << "[DEBUG]\t";
 			break;
@@ -229,7 +240,6 @@ void	Server::log(const log_level &level, const string &log_msg, const int &log_t
 		break;
 	}
 
-	char prev_fill = std::cout.fill();
 	switch (log_to_file) //can change all the print time to a function
 	{
 		case 2:
@@ -243,6 +253,5 @@ void	Server::log(const log_level &level, const string &log_msg, const int &log_t
 			print_time(cout);
 			cout << log_msg << endl;
 	}
-	std::setfill(prev_fill);
 	log_file.close();
 }
