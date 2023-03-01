@@ -77,13 +77,17 @@ void	Server::handler()
 	const char *header_404 = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
     // const char *err_msg = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n<!DOCTYPE html><html><body><h1>404 Not Found</h1></body></html>";
 
-    for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); it++)
+    for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); )
     {
-        cout << string(inet_ntoa(address_read.sin_addr)) << endl; //to get callers ip
+		log(DEBUG, "Client connected with ip : " + string(inet_ntoa(address_read.sin_addr))); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
+        //cout << string(inet_ntoa(address_read.sin_addr)) << endl; //to get callers ip
         char buffer[65535] = {0};
         valread = recv(it->first , buffer, 65535, 0);
         if (valread < 0)
+		{
+			++it;
             continue;
+		}
         it->second += buffer;
         try
         {
@@ -118,18 +122,18 @@ void	Server::handler()
             send(it->first , entireText.c_str() , strlen(entireText.c_str()), MSG_OOB);
 		    log(DEBUG, "------ Message Sent to Client ------ ");
             close(it->first);
-            _erase_list.push_back(it->first);
+		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa(address_read.sin_addr)));
+			_client_sockets.erase(it++);
         }
         catch (...)
         {
-            log(DEBUG, "ERROR: CONNECTION CLOSED WITHOUT DATA");
+		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa(address_read.sin_addr)));
             send(it->first , temp_message , strlen(temp_message), MSG_OOB);
             close(it->first);
-            _erase_list.push_back(it->first);
+		    log(DEBUG, "_cliend fd[" + to_string(it->first) + "] closed");
+			_client_sockets.erase(it++);
         }
     }
-	for (std::vector<int>::iterator it = _erase_list.begin(); it != _erase_list.end(); it++)
-    	_client_sockets.erase(*it);
 }
 
 /*
@@ -172,7 +176,6 @@ void	Server::launch()
 			for (sockets_type::iterator it = _sockets.begin(); it != _sockets.end(); it++)
 			{
 				acceptor(*it);
-				//log(DEBUG, string("Total amount of client_fds open : ") + to_string(_client_sockets.size()));
 				handler();
 			}
         }

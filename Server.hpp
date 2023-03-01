@@ -77,7 +77,6 @@ namespace webserv
 			std::vector<ListeningSocket>		_sockets;
 			int									_new_socket;
     		std::map<int, std::string>    		_client_sockets;
-    		std::vector<int>					_erase_list;
 			ServerConfigParser					_config;
 
 			enum	log_level
