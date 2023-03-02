@@ -50,7 +50,6 @@ namespace webserv
 			ListeningSocket(const int &domain, const int &service, const int &protocol,
 					const int &port, const u_long &interface, const int &backlog,
 					const ServerConfig &config = ServerConfig());
-					//const string &test = string());
 			~ListeningSocket();
 
 			void	start_listening(void);

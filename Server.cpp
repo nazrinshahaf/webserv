@@ -6,6 +6,7 @@
 #include "ServerConfigParser.hpp"
 #include "colours.h"
 
+#include <cstddef>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
@@ -118,13 +119,16 @@ void	Server::handler(ListeningSocket &socket)
             myfile.close();
             send(it->first , entireText.c_str() , strlen(entireText.c_str()), MSG_OOB);
 		    log(DEBUG, "------ Message Sent to Client ------ ", 2, socket.get_config());
-            close(it->first);
 			log(DEBUG, "Client closed with ip : " + socket.get_client_ip(), 2, socket.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
+			log(WARN, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
+            close(it->first);
+			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, socket.get_config());
 			_client_sockets.erase(it++);
         }
         catch (...)
         {
 			log(DEBUG, "Client closed with ip : " + socket.get_client_ip(), 2, socket.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
+			log(WARN, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
             send(it->first , temp_message , strlen(temp_message), MSG_OOB);
             close(it->first);
 			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, socket.get_config());
@@ -206,43 +210,8 @@ void	print_time(std::ostream &stream)
 	std::setfill(prev_fill);
 }
 
-void	Server::log(const log_level &level, const string &log_msg, const int &log_to_file, ServerConfig const &server) const
+void	Server::print_debug_level(const log_level &level, const int &log_to_file, std::fstream &log_file) const
 {
-	log_level		base_log_level = DEBUG;
-	std::fstream	log_file;
-
-	if (log_to_file >= 1) //opening file if log_to_file is set to 1 or 2
-	{
-		pair<ServerConfig::cit_t, ServerConfig::cit_t> pair = server.find_values("error_log");
-		ServerNormalDirectiveConfig nd = dynamic_cast<ServerNormalDirectiveConfig&>(*(pair.first->second));
-
-		log_file.open(nd.get_value(), std::ios::app); //append mode
-		if (!log_file)
-		{
-			log(ERROR, "Cant write to " + nd.get_value()); //file permisions can prob just continue on
-			return;
-		}
-		string	temp_log_level = nd.get_value2();
-		std::transform(temp_log_level.begin(), temp_log_level.end(), temp_log_level.begin(), ::toupper); //convert to uppercase
-
-		if (temp_log_level == "DEBUG") //no switch case for string 
-			base_log_level = DEBUG;
-		else if (temp_log_level == "INFO")
-			base_log_level = INFO;
-		else if (temp_log_level == "WARN")
-			base_log_level = WARN;
-		else if (temp_log_level == "ERROR")
-			base_log_level = ERROR;
-		else
-		{
-			log(ERROR, "Invalid error log format"); //prob need to exit out early if error in config. handle validity somwhere else??
-			return ; 
-		}
-	}
-
-	if (level < base_log_level)
-		return ;
-
 	switch(level)
 	{
 		case 0:
@@ -271,19 +240,73 @@ void	Server::log(const log_level &level, const string &log_msg, const int &log_t
 			break;
 		break;
 	}
+}
 
-	switch (log_to_file) //can change all the print time to a function
+void	Server::print_debug_msg(const log_level &level, const int &log_to_file, std::fstream &log_file, const string &log_msg) const
+{
+	string	log_msg_copy = log_msg;
+
+	while(1)
 	{
-		case 2:
-			print_time(cout);
-			cout << log_msg << endl;
-		case 1:
-			print_time(log_file);
-			log_file << log_msg << endl;
-			break;
-		case 0:
-			print_time(cout);
-			cout << log_msg << endl;
+		string log_line;
+		if (log_msg_copy.length() == 0)
+			break ;
+		if (log_msg_copy.find_first_of("\n") == log_msg_copy.npos)
+			log_line = log_msg_copy;
+		else
+			log_line = log_msg_copy.substr(0, log_msg_copy.find_first_of("\n"));
+		print_debug_level(level, log_to_file, log_file);
+		switch (log_to_file)
+		{
+			case 2:
+				print_time(cout);
+				cout << log_line << endl;
+			case 1:
+				print_time(log_file);
+				log_file << log_line << endl;
+				break;
+			case 0:
+				print_time(cout);
+				cout << log_line << endl;
+		}
+		if (log_msg_copy.find_first_of("\n") == log_msg_copy.npos)
+			break ;
+		log_msg_copy = log_msg_copy.substr(log_msg_copy.find_first_of("\n") + 1);
 	}
+}
+
+void	Server::log(const log_level &level, const string &log_msg, const int &log_to_file, ServerConfig const &server) const
+{
+	log_level		base_log_level = DEBUG;
+	std::fstream	log_file;
+
+	if (log_to_file >= 1) //opening file if log_to_file is set to 1 or 2
+	{
+		pair<ServerConfig::cit_t, ServerConfig::cit_t> pair = server.find_values("error_log");
+		ServerNormalDirectiveConfig nd = dynamic_cast<ServerNormalDirectiveConfig&>(*(pair.first->second));
+
+		log_file.open(nd.get_value(), std::ios::app); //append mode
+		if (!log_file)
+		{
+			log(ERROR, "Cant write to " + nd.get_value()); //file permisions can prob just continue on
+			return;
+		}
+		string	temp_log_level = nd.get_value2();
+		std::transform(temp_log_level.begin(), temp_log_level.end(), temp_log_level.begin(), ::toupper); //convert to uppercase
+
+		if (temp_log_level == "DEBUG") //no switch case for string 
+			base_log_level = DEBUG;
+		else if (temp_log_level == "INFO")
+			base_log_level = INFO;
+		else if (temp_log_level == "WARN")
+			base_log_level = WARN;
+		else if (temp_log_level == "ERROR")
+			base_log_level = ERROR;
+	}
+
+	if (level < base_log_level)
+		return ;
+
+	print_debug_msg(level, log_to_file, log_file, log_msg);
 	log_file.close();
 }

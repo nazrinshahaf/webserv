@@ -93,6 +93,8 @@ namespace webserv
 			void	log(const log_level &level, const string &log_msg,
 							const int &log_to_file = 0,
 							ServerConfig const &server = ServerConfig()) const;
+			void	print_debug_level(const log_level &level, const int &log_to_file, std::fstream &log_file) const;
+			void	print_debug_msg(const log_level &level, const int &log_to_file, std::fstream &log_file, const string &log_msg) const;
 
 	};
 }

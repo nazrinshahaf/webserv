@@ -1,0 +1,111 @@
+[INFO]	 2023-03-02 22:18:24 - Server open at port 80
+[DEBUG]	 2023-03-02 22:18:29 - Server socket open with fd 5
+[DEBUG]	 2023-03-02 22:18:29 - Client connected with ip : 127.0.0.1:52803
+[DEBUG]	 2023-03-02 22:18:30 - Client connected with ip : 127.0.0.1:52803
+[DEBUG]	 2023-03-02 22:18:31 - Client connected with ip : 127.0.0.1:52803
+[DEBUG]	 2023-03-02 22:18:32 - Client connected with ip : 127.0.0.1:52803
+[DEBUG]	 2023-03-02 22:18:33 - Client connected with ip : 127.0.0.1:52803
+[DEBUG]	 2023-03-02 22:18:34 - Client connected with ip : 127.0.0.1:52803
+[DEBUG]	 2023-03-02 22:18:34 - Server socket open with fd 6
+[DEBUG]	 2023-03-02 22:18:34 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:34 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:35 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:35 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:36 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:36 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:37 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:37 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:38 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:38 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:39 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:39 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:40 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:40 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:41 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:41 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:42 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:42 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:43 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:43 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:44 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:44 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:45 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:45 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:46 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:46 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:47 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:47 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:47 - Client closed with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:47 - Client socket closed with fd 6
+[DEBUG]	 2023-03-02 22:18:48 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:49 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:50 - Client connected with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:50 - Client closed with ip : 127.0.0.1:52807
+[DEBUG]	 2023-03-02 22:18:50 - Client socket closed with fd 5
+[INFO]	 2023-03-02 23:51:25 - Server open at port 80
+[DEBUG]	 2023-03-02 23:51:26 - Server socket open with fd 5
+[DEBUG]	 2023-03-02 23:51:26 - Client connected with ip : 127.0.0.1:53420
+[DEBUG]	 2023-03-02 23:51:26 - ------ Message Sent to Client ------ 
+[DEBUG]	 2023-03-02 23:51:26 - Client closed with ip : 127.0.0.1:53420
+[INFO]	 2023-03-02 23:58:46 - Server open at port 80
+[DEBUG]	 2023-03-02 23:58:51 - Server socket open with fd 5
+[DEBUG]	 2023-03-02 23:58:51 - Client connected with ip : 127.0.0.1:53432
+[DEBUG]	 2023-03-02 23:58:51 - ------ Message Sent to Client ------ 
+[DEBUG]	 2023-03-02 23:58:51 - Client closed with ip : 127.0.0.1:53432
+[INFO]	 2023-03-03 00:19:35 - Server open at port 80
+[INFO]	 2023-03-03 00:21:33 - Server open at port 80
+[INFO]	 2023-03-03 00:22:59 - Server open at port 80
+[DEBUG]	 2023-03-03 00:23:04 - Server socket open with fd 5
+[DEBUG]	 2023-03-03 00:23:04 - Client connected with ip : 127.0.0.1:53469
+[INFO]	 2023-03-03 00:23:46 - Server open at port 80
+[DEBUG]	 2023-03-03 00:23:47 - Server socket open with fd 5
+[DEBUG]	 2023-03-03 00:23:47 - Client connected with ip : 127.0.0.1:53470
+[DEBUG]	 2023-03-03 00:23:47 - ------ Message Sent to Client ------ 
+[DEBUG]	 2023-03-03 00:23:47 - Client closed with ip : 127.0.0.1:53470
+[INFO]	 2023-03-03 00:24:43 - Server open at port 80
+[DEBUG]	 2023-03-03 00:24:44 - Server socket open with fd 5
+[DEBUG]	 2023-03-03 00:24:44 - Client connected with ip : 127.0.0.1:53471
+[DEBUG]	 2023-03-03 00:24:44 - ------ Message Sent to Client ------ 
+[DEBUG]	 2023-03-03 00:24:44 - Client closed with ip : 127.0.0.1:53471
+[INFO]	 2023-03-03 00:25:22 - Server open at port 80
+[DEBUG]	 2023-03-03 00:25:23 - Server socket open with fd 5
+[DEBUG]	 2023-03-03 00:25:23 - Client connected with ip : 127.0.0.1:53472
+[DEBUG]	 2023-03-03 00:25:23 - ------ Message Sent to Client ------ 
+[DEBUG]	 2023-03-03 00:25:23 - Client closed with ip : 127.0.0.1:53472
+[INFO]	 2023-03-03 00:26:08 - Server open at port 80
+[INFO]	 2023-03-03 00:26:25 - Server open at port 80
+[DEBUG]	 2023-03-03 00:26:26 - Server socket open with fd 5
+[DEBUG]	 2023-03-03 00:26:26 - Client connected with ip : 127.0.0.1:53473
+[DEBUG]	 2023-03-03 00:26:26 - ------ Message Sent to Client ------ 
+[DEBUG]	 2023-03-03 00:26:26 - Client closed with ip : 127.0.0.1:53473
+[INFO]	 2023-03-03 00:27:01 - Server open at port 80
+[DEBUG]	 2023-03-03 00:27:05 - Server socket open with fd 5
+[DEBUG]	 2023-03-03 00:27:05 - Client connected with ip : 127.0.0.1:53480
+[DEBUG]	 2023-03-03 00:27:05 - ------ Message Sent to Client ------ 
+[DEBUG]	 2023-03-03 00:27:05 - Client closed with ip : 127.0.0.1:53480
+[INFO]	 2023-03-03 00:27:46 - Server open at port 80
+[DEBUG]	 2023-03-03 00:27:46 - Server socket open with fd 5
+[DEBUG]	 2023-03-03 00:27:46 - Client connected with ip : 127.0.0.1:53481
+[DEBUG]	 2023-03-03 00:27:46 - ------ Message Sent to Client ------ 
+[DEBUG]	 2023-03-03 00:27:46 - Client closed with ip : 127.0.0.1:53481
+[INFO]	 2023-03-03 00:28:23 - Server open at port 80
+[DEBUG]	 2023-03-03 00:28:25 - Server socket open with fd 5
+[DEBUG]	 2023-03-03 00:28:25 - Client connected with ip : 127.0.0.1:53482
+[DEBUG]	 2023-03-03 00:28:25 - ------ Message Sent to Client ------ 
+[DEBUG]	 2023-03-03 00:28:25 - Client closed with ip : 127.0.0.1:53482
+[INFO]	 2023-03-03 00:29:04 - Server open at port 80
+[DEBUG]	 2023-03-03 00:29:05 - Server socket open with fd 5
+[DEBUG]	 2023-03-03 00:29:05 - Client connected with ip : 127.0.0.1:53483
+[DEBUG]	 2023-03-03 00:29:05 - ------ Message Sent to Client ------ 
+[DEBUG]	 2023-03-03 00:29:05 - Client closed with ip : 127.0.0.1:53483
+[INFO]	 2023-03-03 00:29:37 - Server open at port 80
+[DEBUG]	 2023-03-03 00:29:39 - Server socket open with fd 5
+[DEBUG]	 2023-03-03 00:29:39 - Client connected with ip : 127.0.0.1:53485
+[DEBUG]	 2023-03-03 00:29:39 - ------ Message Sent to Client ------ 
+[DEBUG]	 2023-03-03 00:29:39 - Client closed with ip : 127.0.0.1:53485
+[INFO]	 2023-03-03 00:32:20 - Server open at port 80
+[DEBUG]	 2023-03-03 00:32:22 - Server socket open with fd 5
+[DEBUG]	 2023-03-03 00:32:22 - Client connected with ip : 127.0.0.1:53489
+[DEBUG]	 2023-03-03 00:32:22 - ------ Message Sent to Client ------ 
+[DEBUG]	 2023-03-03 00:32:22 - Client closed with ip : 127.0.0.1:53489
+[DEBUG]	 2023-03-03 00:32:22 - Client socket closed with fd 5
