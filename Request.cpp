@@ -85,7 +85,7 @@ Request::Request(string request_string)
         _header_lines.push_back(line);
         request_string = request_string.substr(request_string.find("\n") + 1);
     }
-    if (_header_lines.size() < 0 || _header_lines[0].size() <= 1)
+    if (_header_lines.size() < 1 || _header_lines[0].size() <= 1)
 	{
         throw std::exception();
 	}
