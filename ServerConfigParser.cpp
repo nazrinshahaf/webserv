@@ -498,9 +498,17 @@ ServerLocationDirectiveConfig	ServerConfigParser::parse_server_location_block(co
 		line = location_block_copy.substr(0, line_length);
 		key = extract_key(line);
 		is_valid = is_valid_location_directive(key);
-		if (is_valid >= 1)
+		if (is_valid == 1)
 		{
 			location_directive.insert_config(std::make_pair(extract_key(line), extract_value(line)));
+			location_block_copy = location_block_copy.substr(location_block_copy.find_first_of(";") + 1);
+		}
+		else if (is_valid == 3)
+		{
+			string value = extract_value(line);
+
+			std::transform(value.begin(), value.end(), value.begin(), ::toupper);
+			location_directive.insert_config(std::make_pair(extract_key(line), value));
 			location_block_copy = location_block_copy.substr(location_block_copy.find_first_of(";") + 1);
 		}
 		else
@@ -636,7 +644,7 @@ std::ostream&	operator<<(std::ostream& os, const ServerConfigParser &config)
 					ServerLocationDirectiveConfig	ld = dynamic_cast<ServerLocationDirectiveConfig&>(*(*mit).second);
 					ServerLocationDirectiveConfig::map_type	location_map = ld.get_config();
 
-					os << "\t\t[LocaitonDirectiveConfig] : " << endl;
+					os << "\t\t[LocationDirectiveConfig] : " << endl;
 					for (ServerLocationDirectiveConfig::map_type::iterator lit = location_map.begin(); lit != location_map.end(); lit++)
 						os << "\t\t\t<key : " MAGENTA << (*lit).first << RESET ", value : " CYAN << (*lit).second << RESET ">" << endl;
 					os << endl;
