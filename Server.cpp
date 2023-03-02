@@ -77,6 +77,7 @@ void	Server::handler(const ListeningSocket &socket)
 	const char *temp_message = "HTTP/1.1 500 FUCK OFF\r\nContent-Type: text/html\r\nContent-Length: 119\r\n\r\n";
 	const char *header = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n";
 	const char *header_404 = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
+	int i;
     // const char *err_msg = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n<!DOCTYPE html><html><body><h1>404 Not Found</h1></body></html>";
 
     for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); )
@@ -84,29 +85,44 @@ void	Server::handler(const ListeningSocket &socket)
 		log(DEBUG, "Client connected with ip : " + string(inet_ntoa(address_read.sin_addr)), 2, socket.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
         //cout << string(inet_ntoa(address_read.sin_addr)) << endl; //to get callers ip
         char buffer[65535] = {0};
+		string buffer_str;
+
         valread = recv(it->first , buffer, 65535, 0);
         if (valread < 0)
 		{
 			++it;
             continue;
 		}
-        it->second += buffer;
+
+		i = 0;
+		while (i < valread)
+		{
+			buffer_str.push_back(buffer[i++]);
+		}
+	
+        it->second += buffer_str;
         try
         {
-            Request req((string(buffer)));
-            // printf("[%s]\n",buffer );
-            // printf("-------------\n");
-            // check if buffer is fully read
-            // if so then close socket
-		    // TODO: implement responder AND COVERT IT TO OOP
+            Request req(buffer_str, it->first);
+
+			if (_requests.find(it->first) == _requests.end())
+			{
+				_requests[it->first] = req;
+			}
+			else
+			{
+				req = _requests[it->first];
+				req.add_body(buffer_str);
+			}
+
             log(DEBUG, req.to_str());
-            cout << "The req.path is |" << req.path() << "|\n";
 
             std::ifstream myfile;
             string entireText;
             string line;
 
 			// Defaults to index.html
+			// TODO: implement in responder
             if (req.path() == "/")
                 myfile.open("public/index.html");
             else
@@ -121,14 +137,30 @@ void	Server::handler(const ListeningSocket &socket)
             while (std::getline(myfile, line))
                 entireText += line;
             myfile.close();
-            send(it->first , entireText.c_str() , strlen(entireText.c_str()), MSG_OOB);
-		    log(DEBUG, "------ Message Sent to Client ------ ");
-            close(it->first);
-		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa(address_read.sin_addr)));
-			_client_sockets.erase(it++);
+			if (req.done())
+			{
+				log(DEBUG, "[[[[[[[Dislaying body]]]]]]]");
+				std::cout << req.body();
+				log(DEBUG, "[[[[[[[Stop Dislaying body]]]]]]");
+				// int i = 0;
+				// for (string::const_iterator tempit = req.body().begin(); tempit != req.body().end(); tempit++)
+				// {
+				// 	i++;
+				// 	if (i == 6)
+				// 		break;
+				// 	std::cout << *tempit;
+				// }
+				send(it->first , entireText.c_str() , strlen(entireText.c_str()), MSG_OOB);
+				log(DEBUG, "------ Message Sent to Client ------ ");
+				close(it->first);
+				_requests.erase(it->first);
+				log(DEBUG, "Client closed with ip : " + string(inet_ntoa(address_read.sin_addr)));
+				_client_sockets.erase(it++);
+			}
         }
-        catch (...)
+        catch (std::exception &e)
         {
+		    log(DEBUG, "\x1B[31mEXCEPTION OCCURED: "  + string(e.what()) + string(inet_ntoa(address_read.sin_addr)) + string("\x1B[0m"));
 		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa(address_read.sin_addr)));
             send(it->first , temp_message , strlen(temp_message), MSG_OOB);
             close(it->first);
