@@ -1,9 +1,12 @@
 #include "Socket.hpp"
+#include <string>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 using std::cout;
 using std::endl;
 using std::cerr;
+using std::string;
 using namespace webserv;
 
 /*
@@ -69,6 +72,11 @@ int			Socket::get_sock() const
 int			Socket::get_connection_fd() const
 {
 	return (_connection_fd);
+}
+
+string		Socket::get_client_ip()
+{
+	return (string(inet_ntoa((*get_address()).sin_addr)) + ":" + std::to_string((ntohs((*get_address()).sin_port))));
 }
 
 void		Socket::set_connection_fd(const int &new_connection_fd)

@@ -77,7 +77,7 @@ void	Server::handler(ListeningSocket &socket)
 
     for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); )
     {
-		log(DEBUG, "Client connected with ip : " + string(inet_ntoa((*socket.get_address()).sin_addr)), 2, socket.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
+		log(DEBUG, "Client connected with ip : " + socket.get_client_ip(), 2, socket.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
         char buffer[65535] = {0};
         valread = recv(it->first , buffer, 65535, 0);
         if (valread < 0)
@@ -119,12 +119,12 @@ void	Server::handler(ListeningSocket &socket)
             send(it->first , entireText.c_str() , strlen(entireText.c_str()), MSG_OOB);
 		    log(DEBUG, "------ Message Sent to Client ------ ", 2, socket.get_config());
             close(it->first);
-		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa((*socket.get_address()).sin_addr)), 2, socket.get_config());
+			log(DEBUG, "Client closed with ip : " + socket.get_client_ip(), 2, socket.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
 			_client_sockets.erase(it++);
         }
         catch (...)
         {
-		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa((*socket.get_address()).sin_addr)), 2, socket.get_config());
+			log(DEBUG, "Client closed with ip : " + socket.get_client_ip(), 2, socket.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
             send(it->first , temp_message , strlen(temp_message), MSG_OOB);
             close(it->first);
 			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, socket.get_config());

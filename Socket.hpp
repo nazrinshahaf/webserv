@@ -1,6 +1,7 @@
 #ifndef SOCKET_HPP
 # define SOCKET_HPP
 
+#include "BaseConfig.hpp"
 #include "colours.h"
 
 #include <iostream>
@@ -60,6 +61,7 @@ class Socket
 		sockaddr_t	*get_address();
 		int			get_sock() const;
 		int			get_connection_fd() const;
+		string		get_client_ip();
 
 		void		set_connection_fd(const int &new_connection_fd);
 	
