@@ -122,17 +122,17 @@ void	Server::handler(const ListeningSocket &socket)
                 entireText += line;
             myfile.close();
             send(it->first , entireText.c_str() , strlen(entireText.c_str()), MSG_OOB);
-		    log(DEBUG, "------ Message Sent to Client ------ ");
+		    log(DEBUG, "------ Message Sent to Client ------ ", 2, socket.get_config());
             close(it->first);
-		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa(address_read.sin_addr)));
+		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa(address_read.sin_addr)), 2, socket.get_config());
 			_client_sockets.erase(it++);
         }
         catch (...)
         {
-		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa(address_read.sin_addr)));
+		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa(address_read.sin_addr)), 2, socket.get_config());
             send(it->first , temp_message , strlen(temp_message), MSG_OOB);
             close(it->first);
-		    log(DEBUG, "_cliend fd[" + to_string(it->first) + "] closed");
+			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, socket.get_config());
 			_client_sockets.erase(it++);
         }
     }
@@ -152,7 +152,10 @@ void	Server::acceptor(const ListeningSocket &socket)
 
 	new_socket_fd = socket.accept_connections();
 	if (new_socket_fd >= 0)
+	{
+		log(DEBUG, string("Server socket open with fd ") + to_string(new_socket_fd), 2, socket.get_config());
 		_client_sockets[new_socket_fd] = string("");
+	}
 }
 
 void	Server::launch()
@@ -171,7 +174,7 @@ void	Server::launch()
     {
 		log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size())));
 		for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); it++)
-			log(DEBUG, (string("client fd[") + to_string(it->first) + "] is open"));
+			log(DEBUG, (string("Client fd[") + to_string(it->first) + "] is open"));
         // Run this only if a socket is queued (poll) OR we have open sockets that have not yet written bytes
         if (poll(fds, nfds, 1000) > 0 || _client_sockets.size() > 0)
         {

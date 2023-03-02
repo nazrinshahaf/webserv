@@ -207,6 +207,7 @@ namespace webserv
 			 * */
 
 			int			is_valid_server_normal_directive(const string &key) const;
+			int			is_valid_location_directive(const string &key) const;
 			int			is_valid_base_directive(const string &directive) const;
 		
 			/*
@@ -227,9 +228,10 @@ namespace webserv
 			void		initialize_valid_directives(const char **directives, std::set<string> *set, size_t len);
 
 
-			void		validate_listen(const ServerNormalDirectiveConfig &directive);
-			void		validate_error_log(const ServerNormalDirectiveConfig &directive);
-			void		validate_error_page(const ServerNormalDirectiveConfig &directive);
+			void		validate_listen(const ServerNormalDirectiveConfig &directive) const;
+			void		validate_error_log(const ServerNormalDirectiveConfig &directive) const;
+			void		validate_error_page(const ServerNormalDirectiveConfig &directive) const;
+			void		validate_allowed_methods(const ServerLocationDirectiveConfig &directive, const ServerLocationDirectiveConfig::pair_type &pair) const;
 
 			std::set<string>	_valid_base_directives;
 			std::set<string>	_valid_server_normal_directives;

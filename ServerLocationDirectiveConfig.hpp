@@ -7,9 +7,11 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <vector>
 
 using std::string;
 using std::pair;
+using std::multimap;
 
 namespace webserv
 {
@@ -17,11 +19,12 @@ namespace webserv
 	{
 		public:
 
-			typedef std::multimap<string, string>					map_type;
-			typedef std::multimap<string, string>::iterator			iterator_type;
-			typedef std::multimap<string, string>::const_iterator	const_iterator_type;
-			typedef std::multimap<string, string>::iterator			itt;
-			typedef std::multimap<string, string>::const_iterator	citt;
+			typedef multimap<string, string>	map_type;
+			typedef pair<string, string>		pair_type;
+			typedef map_type::iterator			iterator_type;
+			typedef map_type::const_iterator	const_iterator_type;
+			typedef map_type::iterator			it_t;
+			typedef map_type::const_iterator	cit_t;
 
 			ServerLocationDirectiveConfig();
 			ServerLocationDirectiveConfig(const ServerLocationDirectiveConfig &to_copy);
@@ -30,8 +33,9 @@ namespace webserv
 			ServerLocationDirectiveConfig	*get_base(void) const;
 			ServerLocationDirectiveConfig	*get_copy(void) const;
 
-			const map_type&									get_config() const;
+			const map_type									&get_config() const;
 			pair<const_iterator_type,const_iterator_type>	find_values(const string &key) const;
+			std::vector<string>								split_methods() const;
 
 			//void	insert_config(const string &key, const string &value);
 		
@@ -40,8 +44,8 @@ namespace webserv
 			void	insert_config(const std::pair<string, string> &pair_to_insert);
 
 		private:
-			std::multimap<string,string>	_location_directive_config;
-			string							_path;
+			map_type	_location_directive_config;
+			string		_path;
 	};
 }
 

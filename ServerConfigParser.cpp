@@ -4,9 +4,11 @@
 #include "ServerConfig.hpp"
 #include "ServerLocationDirectiveConfig.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
+#include <algorithm>
 #include <cctype>
 #include <cstddef>
 #include <map>
+#include <ostream>
 #include <string>
 #include <sys/_types/_size_t.h>
 #include <utility>
@@ -21,7 +23,7 @@ const char *valid_server_normal_directives_array[] = {"listen",
 	"error_page"};
 
 const char *valid_server_location_directives_array[] = {"fastcgi_pass",
-	"root", "expires"};
+	"root", "allowed_methods"};
 
 ServerConfigParser::ServerConfigParser(const string &config_str) : _config_str(config_str)
 {
@@ -149,7 +151,7 @@ void ServerConfigParser::parse_config(void)
 		//}
 		else
 		{
-			cout << "throw not keyword" << endl; //throw someshit
+			cout << "throw {" << key << "} not keyword" << endl; //throw someshit
 			return;
 		}
 	}
@@ -181,8 +183,16 @@ void	ServerConfigParser::validate_config(void)
 				}
 				else
 				{
-					ServerLocationDirectiveConfig	location_directive =
+					ServerLocationDirectiveConfig			location_directive =
 						dynamic_cast<ServerLocationDirectiveConfig&>(*server_line->second);
+					ServerLocationDirectiveConfig::map_type	location_map = location_directive.get_config();
+
+					for (ServerLocationDirectiveConfig::cit_t location_line = location_map.begin();
+							location_line != location_map.end(); location_line++)
+					{
+						if (location_line->first == "allowed_methods")
+							validate_allowed_methods(location_directive, *location_line);
+					}
 				}
 			}
 		}
@@ -363,8 +373,8 @@ int				ServerConfigParser::count_values_in_line(const string &line) const
 	int		values = 0;
 	string	line_copy = line;
 
-	line_copy = line_copy.substr(line_copy.find_first_not_of("\t\n "));
-	//cout << "[" << line_copy << "]" << endl;
+	line_copy = line_copy.substr(line_copy.find_first_not_of("\t\n "), line_copy.find_first_of(";"));
+	line_copy.erase(std::remove(line_copy.begin(), line_copy.end(), '\n'), line_copy.end());
 	while (1)
 	{
 		size_t	len;
@@ -400,10 +410,6 @@ ServerConfig	ServerConfigParser::parse_server_block(const std::string &server_bl
 			break;
 		string line = server_block_copy.substr(0, line_length);
 
-		//cout << "==================" << endl;
-		//cout << "line [" << line << "]" << endl;
-		//cout << "==================" << endl;
-
 		string	key = extract_key(line);
 		size_t	key_is_valid = is_valid_server_normal_directive(key);
 		if (key_is_valid == 1 || key_is_valid == 2) //Server Normal Directive Config
@@ -431,7 +437,7 @@ ServerConfig	ServerConfigParser::parse_server_block(const std::string &server_bl
 		}
 		else
 		{
-			cout << "throw key is not valid" << endl;
+			cout << "throw key {" << key << "} is not a valid normal directive" << endl;
 			exit(1);
 		}
 	}
@@ -447,7 +453,6 @@ ServerNormalDirectiveConfig		ServerConfigParser::parse_server_normal_directive(c
 	int							is_valid = is_valid_server_normal_directive(key);
 	int							value_count = count_values_in_line(normal_directive_line);
 
-
 	if (is_valid == 2) //Check for Normal Directives with multiple values
 	{
 		string	temp;
@@ -455,7 +460,7 @@ ServerNormalDirectiveConfig		ServerConfigParser::parse_server_normal_directive(c
 
 		if (value_count != 2)
 		{
-			cout << "throw some error wrong value count for key " << key << endl;
+			cout << "throw some error wrong value count for key {" << key << "}" << endl;
 			exit(1);
 		}
 		temp = extract_value(normal_directive_copy);
@@ -467,7 +472,7 @@ ServerNormalDirectiveConfig		ServerConfigParser::parse_server_normal_directive(c
 	{
 		if (value_count != 1)
 		{
-			cout << "throw some error wrong value count for key " << key << endl;
+			cout << "throw some error wrong value count for key {" << key << "}" << endl;
 			exit(1);
 		}
 		value = extract_value(normal_directive_copy);
@@ -485,14 +490,35 @@ ServerLocationDirectiveConfig	ServerConfigParser::parse_server_location_block(co
 	{
 		size_t	line_length = location_block_copy.find_first_of(";");
 		string	line;
+		string	key;
+		int		is_valid;
 
 		if (line_length == location_block_copy.npos)
 			break ;
 		line = location_block_copy.substr(0, line_length);
-		location_directive.insert_config(std::make_pair(extract_key(line), extract_value(line)));
-		location_block_copy = location_block_copy.substr(location_block_copy.find_first_of(";") + 1);
+		key = extract_key(line);
+		is_valid = is_valid_location_directive(key);
+		if (is_valid >= 1)
+		{
+			location_directive.insert_config(std::make_pair(extract_key(line), extract_value(line)));
+			location_block_copy = location_block_copy.substr(location_block_copy.find_first_of(";") + 1);
+		}
+		else
+		{
+			cout << "throw key {" << key << "} is not a valid location directive" << endl;
+			exit(1);
+		}
 	}
 	return (location_directive);
+}
+
+int			ServerConfigParser::is_valid_location_directive(const string &key) const
+{
+	if (_valid_server_location_directives.find(key) == _valid_server_location_directives.end())
+		return (0);
+	else if (key == "allowed_methods")
+		return (3);
+	return (1);
 }
 
 int			ServerConfigParser::is_valid_server_normal_directive(const string &key) const
@@ -530,23 +556,23 @@ int			is_string_num(const string &str)
     return (!str.empty() && c == str.end());
 }
 
-//int			is_string_path(const string &str)
-//{
-//	for (string::const_iterator c = str.begin(); c != str.end(); c++)
-//	{
-//		if (!std::isdigit(*c) && *c != '/' && *c != '.' && !std::isalpha(*c))
-//			return (0);
-//	}
-//	return (1);
-//}
+int			is_string_path(const string &str)
+{
+	for (string::const_iterator c = str.begin(); c != str.end(); c++)
+	{
+		if (!std::isdigit(*c) && *c != '/' && *c != '.' && !std::isalpha(*c))
+			return (0);
+	}
+	return (1);
+}
 
-void		ServerConfigParser::validate_listen(const ServerNormalDirectiveConfig &directive)
+void		ServerConfigParser::validate_listen(const ServerNormalDirectiveConfig &directive) const
 {
 	if (!is_string_num(directive.get_value()))
 		cout << RED "throw Invalid character found in listen directive" RESET << endl;
 }
 
-void		ServerConfigParser::validate_error_log(const ServerNormalDirectiveConfig &directive)
+void		ServerConfigParser::validate_error_log(const ServerNormalDirectiveConfig &directive) const
 {
 	string	debug_level = directive.get_value2();
 
@@ -555,10 +581,32 @@ void		ServerConfigParser::validate_error_log(const ServerNormalDirectiveConfig &
 		cout << RED "throw Invalid debug level" RESET << endl;
 }
 
-void		ServerConfigParser::validate_error_page(const ServerNormalDirectiveConfig &directive)
+void		ServerConfigParser::validate_error_page(const ServerNormalDirectiveConfig &directive) const
 {
 	if (!is_string_num(directive.get_value()))
 		cout << RED "throw Invalid character found in error_page number directive" RESET << endl;
+}
+
+void		ServerConfigParser::validate_allowed_methods(const ServerLocationDirectiveConfig &directive,
+		const ServerLocationDirectiveConfig::pair_type &pair) const
+{
+	int	method_count = count_values_in_line(pair.second) + 1;
+	if (method_count > 3)
+	{
+		cout << RED "throw Too many methods in allowed_methods" RESET << endl;
+		return;
+	}
+
+	std::vector<string>	methods = directive.split_methods();
+	for (std::vector<string>::iterator method = methods.begin(); method != methods.end(); method++)
+	{
+		std::transform(method->begin(), method->end(), method->begin(), ::toupper); //convert to uppercase
+		if (*method != "GET" && *method != "POST" && *method != "DELETE")
+		{
+			cout << RED "throw Invalid allowed_methods" RESET << endl;
+			return ;
+		}
+	}
 }
 
 // =========================== ostream overload ==================================
@@ -590,7 +638,7 @@ std::ostream&	operator<<(std::ostream& os, const ServerConfigParser &config)
 
 					os << "\t\t[LocaitonDirectiveConfig] : " << endl;
 					for (ServerLocationDirectiveConfig::map_type::iterator lit = location_map.begin(); lit != location_map.end(); lit++)
-						os << "\t\t\t<key : " MAGENTA << (*lit).first << RESET ", value : " CYAN << (*lit).second << ">" RESET << endl;
+						os << "\t\t\t<key : " MAGENTA << (*lit).first << RESET ", value : " CYAN << (*lit).second << RESET ">" << endl;
 					os << endl;
 				}
 			}

@@ -1,4 +1,5 @@
 #include "ListeningSocket.hpp"
+#include <sys/socket.h>
 
 using namespace webserv;
 

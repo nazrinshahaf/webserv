@@ -75,7 +75,6 @@ namespace webserv
 
 		private:
 			std::vector<ListeningSocket>		_sockets;
-			int									_new_socket;
     		std::map<int, std::string>    		_client_sockets;
 			ServerConfigParser					_config;
 
