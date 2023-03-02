@@ -57,7 +57,7 @@ class Socket
 
 		void		test_connection(const int &sock_fd, const std::string &fd_name) const;
 
-		sockaddr_t	get_address() const;
+		sockaddr_t	*get_address();
 		int			get_sock() const;
 		int			get_connection_fd() const;
 

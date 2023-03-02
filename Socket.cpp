@@ -56,9 +56,9 @@ void		Socket::test_connection(const int &sock_fd, const std::string &fd_name) co
 #endif // DEBUG
 }
 
-Socket::sockaddr_t	Socket::get_address() const
+Socket::sockaddr_t	*Socket::get_address()
 {
-	return (_address);
+	return (&_address);
 }
 
 int			Socket::get_sock() const

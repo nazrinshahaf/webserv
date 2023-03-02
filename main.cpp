@@ -28,14 +28,12 @@ void start_server()
 	config_parser.parse_config();
 	config_parser.validate_config();
 
-	cout << config_parser << endl;
-
-    //Server				server(config_parser);
+    Server				server(config_parser);
     //ListeningSocket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);
     //server.add_socket(AF_INET, SOCK_STREAM, 0, 8001, INADDR_ANY, 10);
     //server.add_socket(AF_INET, SOCK_STREAM, 0, 91, INADDR_ANY, 10);
     //server.add_socket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);
-    //server.launch();
+    server.launch();
     // server.add_socket(AF_INET, SOCK_STREAM, 0, 81, INADDR_ANY, 10);
 
 }

@@ -15,7 +15,7 @@ BindingSocket::BindingSocket(const int &domain, const int &service,
 	cout << GREEN "Binding Socket Default Constructor called" RESET << endl;
 #endif // !PRINT_MSG
 	
-	int	connection_fd = bind_to_network(get_sock(), get_address());
+	int	connection_fd = bind_to_network(get_sock(), *get_address());
 	set_connection_fd(connection_fd);
 	test_connection(get_connection_fd(), "Binding");
 }

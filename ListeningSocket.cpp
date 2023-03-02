@@ -1,5 +1,7 @@
 #include "ListeningSocket.hpp"
+#include <netinet/in.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 using namespace webserv;
 
@@ -33,13 +35,12 @@ void	ListeningSocket::start_listening(void)
 	_listening = listen(get_sock(), _backlog);
 }
 
-int		ListeningSocket::accept_connections(void) const
+int		ListeningSocket::accept_connections(void)
 {
 	int	client_socket_fd;
-	//Socket::sockaddr_t	address = get_address();
+	int	addrlen = sizeof(*get_address());
 
-	//client_socket_fd = accept(get_sock(), (struct sockaddr *)&address, sizeof(struct sockaddr)); //i have to change get_address() to a pointer
-	client_socket_fd = accept(get_sock(), NULL, NULL);
+	client_socket_fd = accept(get_sock(), (struct sockaddr *)get_address(), (socklen_t*)&addrlen);
 	return (client_socket_fd);
 }
 

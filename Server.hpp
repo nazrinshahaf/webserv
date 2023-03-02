@@ -86,8 +86,8 @@ namespace webserv
 				ERROR
 			};
 
-			void	acceptor(const ListeningSocket &socket);
-			void	handler(const ListeningSocket &socket);
+			void	acceptor(ListeningSocket &socket);
+			void	handler(ListeningSocket &socket);
 			void	responder(void);
 
 			void	log(const log_level &level, const string &log_msg,

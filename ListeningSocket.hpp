@@ -54,7 +54,7 @@ namespace webserv
 			~ListeningSocket();
 
 			void	start_listening(void);
-			int		accept_connections(void) const;
+			int		accept_connections(void);
 
 			const ServerConfig	&get_config() const;
 

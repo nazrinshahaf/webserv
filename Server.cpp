@@ -66,13 +66,9 @@ void	Server::add_socket(const int &domain, const int &service, const int &protoc
     _sockets.push_back(ListeningSocket(domain, service, protocol, port, interface, backlog));
 }
 
-void	Server::handler(const ListeningSocket &socket)
+void	Server::handler(ListeningSocket &socket)
 {
-    struct sockaddr_in      address_read;
-    // int                     address_read_len = sizeof(address_read);
     long	valread;
-
-	(void)socket;
 
 	const char *temp_message = "HTTP/1.1 500 FUCK OFF\r\nContent-Type: text/html\r\nContent-Length: 119\r\n\r\n";
 	const char *header = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n";
@@ -81,8 +77,7 @@ void	Server::handler(const ListeningSocket &socket)
 
     for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); )
     {
-		log(DEBUG, "Client connected with ip : " + string(inet_ntoa(address_read.sin_addr)), 2, socket.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
-        //cout << string(inet_ntoa(address_read.sin_addr)) << endl; //to get callers ip
+		log(DEBUG, "Client connected with ip : " + string(inet_ntoa((*socket.get_address()).sin_addr)), 2, socket.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
         char buffer[65535] = {0};
         valread = recv(it->first , buffer, 65535, 0);
         if (valread < 0)
@@ -124,12 +119,12 @@ void	Server::handler(const ListeningSocket &socket)
             send(it->first , entireText.c_str() , strlen(entireText.c_str()), MSG_OOB);
 		    log(DEBUG, "------ Message Sent to Client ------ ", 2, socket.get_config());
             close(it->first);
-		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa(address_read.sin_addr)), 2, socket.get_config());
+		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa((*socket.get_address()).sin_addr)), 2, socket.get_config());
 			_client_sockets.erase(it++);
         }
         catch (...)
         {
-		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa(address_read.sin_addr)), 2, socket.get_config());
+		    log(DEBUG, "Client closed with ip : " + string(inet_ntoa((*socket.get_address()).sin_addr)), 2, socket.get_config());
             send(it->first , temp_message , strlen(temp_message), MSG_OOB);
             close(it->first);
 			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, socket.get_config());
@@ -146,7 +141,7 @@ void	Server::handler(const ListeningSocket &socket)
  *	*not sure if we need to change the values for adddres for now its left at NULL
  * */
 
-void	Server::acceptor(const ListeningSocket &socket)
+void	Server::acceptor(ListeningSocket &socket)
 {
 	int	new_socket_fd;
 
