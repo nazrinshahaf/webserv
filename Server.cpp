@@ -66,11 +66,13 @@ void	Server::add_socket(const int &domain, const int &service, const int &protoc
     _sockets.push_back(ListeningSocket(domain, service, protocol, port, interface, backlog));
 }
 
-void	Server::handler()
+void	Server::handler(const ListeningSocket &socket)
 {
     struct sockaddr_in      address_read;
     // int                     address_read_len = sizeof(address_read);
     long	valread;
+
+	(void)socket;
 
 	const char *temp_message = "HTTP/1.1 500 FUCK OFF\r\nContent-Type: text/html\r\nContent-Length: 119\r\n\r\n";
 	const char *header = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n";
@@ -79,7 +81,7 @@ void	Server::handler()
 
     for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); )
     {
-		log(DEBUG, "Client connected with ip : " + string(inet_ntoa(address_read.sin_addr))); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
+		log(DEBUG, "Client connected with ip : " + string(inet_ntoa(address_read.sin_addr)), 2, socket.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
         //cout << string(inet_ntoa(address_read.sin_addr)) << endl; //to get callers ip
         char buffer[65535] = {0};
         valread = recv(it->first , buffer, 65535, 0);
@@ -176,7 +178,7 @@ void	Server::launch()
 			for (sockets_type::iterator it = _sockets.begin(); it != _sockets.end(); it++)
 			{
 				acceptor(*it);
-				handler();
+				handler(*it);
 			}
         }
     }

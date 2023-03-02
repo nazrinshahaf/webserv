@@ -88,7 +88,7 @@ namespace webserv
 			};
 
 			void	acceptor(const ListeningSocket &socket);
-			void	handler(void);
+			void	handler(const ListeningSocket &socket);
 			void	responder(void);
 
 			void	log(const log_level &level, const string &log_msg,
