@@ -3,6 +3,7 @@
 
 #include "BindingSocket.hpp"
 #include "ServerConfig.hpp"
+#include <string>
 
 /*
  * ListeningSocket.
@@ -54,6 +55,8 @@ namespace webserv
 
 			void	start_listening(void);
 			int		accept_connections(void) const;
+
+			const ServerConfig	&get_config() const;
 
 		private:
 			int				_backlog;

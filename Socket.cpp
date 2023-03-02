@@ -1,4 +1,5 @@
 #include "Socket.hpp"
+#include <sys/socket.h>
 
 using std::cout;
 using std::endl;
@@ -15,6 +16,8 @@ using namespace webserv;
  *	to network byte order.
  * @note 'htonl' : htonl converts a long from host byte order 
  *	to network byte order.
+ *
+ * * : https://stackoverflow.com/a/41490982
  * */
 
 Socket::Socket(const int &domain, const int &service, const int &protocol,
@@ -29,6 +32,7 @@ Socket::Socket(const int &domain, const int &service, const int &protocol,
 	_address.sin_addr.s_addr = htonl(interface);
 
 	_sock = socket(domain, service, protocol);
+	setsockopt(_sock, SOL_SOCKET, SO_REUSEADDR, NULL, 0); //So u can reuse the socket port might lead to specific issues*
 	test_connection(_sock, "Default");
 }
 

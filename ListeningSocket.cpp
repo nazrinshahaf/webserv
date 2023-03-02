@@ -41,3 +41,8 @@ int		ListeningSocket::accept_connections(void) const
 	client_socket_fd = accept(get_sock(), NULL, NULL);
 	return (client_socket_fd);
 }
+
+const ServerConfig	&ListeningSocket::get_config() const
+{
+	return (_config);
+}
