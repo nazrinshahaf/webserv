@@ -2,6 +2,7 @@
 #include "ServerBaseConfig.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
 #include "ServerLocationDirectiveConfig.hpp"
+#include "Socket.hpp"
 #include <string>
 
 using namespace webserv;
@@ -49,7 +50,22 @@ const ServerConfig::map_type&	ServerConfig::get_server_config() const
 pair<ServerConfig::const_iterator_type, ServerConfig::const_iterator_type>
 ServerConfig::find_values(const string &key) const
 {
+	ServerConfig::cit_t it = _server_config.find(key);
+
+	if (it == _server_config.end())
+		throw ConfigException("key {" + key + "} not found in find_values.");
 	return (_server_config.equal_range((key)));
+}
+
+const ServerNormalDirectiveConfig&
+ServerConfig::find_normal_directive(const string &key) const
+{
+	ServerConfig::cit_t it = _server_config.find((key));
+
+	if (it == _server_config.end())
+		throw ConfigException("key {" + key + "} not found in find_normal_directive.");
+	const ServerNormalDirectiveConfig *nd = dynamic_cast<const ServerNormalDirectiveConfig*>(it->second);
+	return (*nd);
 }
 
 /*

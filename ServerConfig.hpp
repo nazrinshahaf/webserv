@@ -3,72 +3,16 @@
 
 #include "BaseConfig.hpp"
 #include "ServerBaseConfig.hpp"
+#include "ServerNormalDirectiveConfig.hpp"
 
 #include <map>
 #include <string>
 #include <iostream>
 #include <utility>
+#include <exception>
 
 using std::string;
 using std::pair;
-
-/*
- * 
- * server {
- *   listen			80;
- *   listen			[::]:80;
- *   server_name	domain1.com www.domain1.com;
- *   access_log 	logs/domain1.access.log main;
- *   root       	html;
- *
- *   location \ {
- *    fastcgi_pass  127.0.0.1:1025;
- *    root			/var/www/virtual/big.server.com/htdocs;
- *    expires		30d;
- *   }
- * }
- *
- * multimap<string, BaseConfig>			_config;
- * multimap<string, ServerBaseConfig*>	_server_config;
- *
- * ServerNormalDirectiveConfig -> ServerBaseConfig;
- *	string	_server_normal_directive_config;
- *
- * ServerLocationDirectiveConfig -> ServerBaseConfig;
- *	multimap<string, string> _server_location_directive_config;
- *	multimap<string, pair<string, string> > _server_location_directive_config; (not sure yet how i want to store path)
- *
- * <user, www-data>
- *
- * <server, <
- *	 <listen, <80> >
- *	 <listen, <[::]:80> >,
- *	 <server_name, <domain1.com www.domain1.com> >,
- *	 <access_long, <logs/domain1.access.log main> >,
- *	 <root, <html> >,
- *	
- *	 <location /path/to/dir/here, ,
- *		<fastcgi_pass, 127.0.0.1:1025>,
- *		<root, /var/www/virtual/big.server.com/htdocs>,
- *		<expires, 30d>,
- *	 >
- * >
- *
- * multimap<server, ServerBaseConfig multimap<
- *	ServerNormalDirectiveConfig <listen, 80>,
- *	ServerNormalDirectiveConfig <listen, [::]:80>,
- *	ServerNormalDirectiveConfig <server_name, <domain1.com www.domain1.com> >
- *	ServerNormalDirectiveConfig <access_log, <logs/domain1.access_log.log main> >
- *	ServerNormalDirectiveConfig <root, html>
- *
- *	ServerLocationDirectiveConfig multimap <location /path/to/dir/here,
- *		<fastcgi_pass, 127.0.0.1:1025>,
- *		<root, /var/www/virtual/big/server/com/htdocs>,
- *		<expires, 30d>,
- *	>
- * >
- * */
-
 
 namespace webserv
 {
@@ -127,6 +71,18 @@ namespace webserv
 			 * */
 
 			pair<const_iterator_type, const_iterator_type>	find_values(const string &key) const;
+
+			/*
+			 * find_normal_directives.
+			 * Searches for a normal_directive.
+			 *
+			 * @return : The normal_directive.
+			 *
+			 * @param 'key' : the key of the normal_directive to look
+			 *	for.
+			 * */
+
+			const ServerNormalDirectiveConfig	&find_normal_directive(const string &key) const;
 
 			/*
 			 * insert_config.

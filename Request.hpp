@@ -43,7 +43,7 @@ namespace webserv
 			const string					to_str() const;
 
 			struct RequiredHeaderParamNotGivenException : public std::exception {
-			const char * what () const throw () {
+				const char * what () const throw () {
 					return "required header has not been supplied";
 				}
 			};

@@ -4,6 +4,7 @@
 #include "BaseConfig.hpp"
 #include "colours.h"
 
+#include <exception>
 #include <iostream>
 #include <netinet/in.h>
 #include <cstdlib>
@@ -64,7 +65,7 @@ class Socket
 		string		get_client_ip();
 
 		void		set_connection_fd(const int &new_connection_fd);
-	
+
 	private:
 
 		/*
@@ -74,7 +75,7 @@ class Socket
 
 		sockaddr_t	_address;
 		int			_sock;
-		int			_connection_fd;
+		int			_connection_fd; //TODO : this is useless remove it and all other stuff related to it later
 };
 
 }

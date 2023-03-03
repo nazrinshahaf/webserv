@@ -2,12 +2,14 @@
 #include "ListeningSocket.hpp"
 #include "Request.hpp"
 #include "ServerConfig.hpp"
+#include "ServerLocationDirectiveConfig.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
 #include "ServerConfigParser.hpp"
 #include "colours.h"
 
 #include <cstddef>
 #include <cstdlib>
+#include <exception>
 #include <iomanip>
 #include <iostream>
 #include <fstream>
@@ -89,6 +91,7 @@ void	Server::handler(ListeningSocket &socket)
         it->second += buffer;
         try
         {
+			string	root_path;
             Request req((string(buffer)));
             // printf("[%s]\n",buffer );
             // printf("-------------\n");
@@ -96,7 +99,15 @@ void	Server::handler(ListeningSocket &socket)
             // if so then close socket
 		    // TODO: implement responder AND COVERT IT TO OOP
             log(DEBUG, req.to_str());
+			try {
+				root_path = socket.get_config().find_normal_directive("root").get_value();
+			}
+			catch (std::exception &e) {
+				log(ERROR, string(e.what()), 2, socket.get_config());
+				root_path = "/";
+			}
             cout << "The req.path is |" << req.path() << "|\n";
+			//dynamic_cast<ServerNormalDirectiveConfig&>((*((socket.get_config().find_values("root")).first)));
 
             std::ifstream myfile;
             string entireText;
@@ -104,9 +115,9 @@ void	Server::handler(ListeningSocket &socket)
 
 			// Defaults to index.html
             if (req.path() == "/")
-                myfile.open("public/index.html");
+                myfile.open(root_path + "/index.html");
             else
-                myfile.open("public" + req.path());
+                myfile.open(root_path + req.path());
             if (!myfile)
 			{
 				entireText += header_404;
@@ -185,6 +196,8 @@ void	Server::launch()
         }
     }
 }
+
+// ============================== LOGGING ==================================
 
 /*
  * log_to_file :

@@ -4,6 +4,7 @@
 #include "ServerConfig.hpp"
 #include "ServerLocationDirectiveConfig.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
+
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
@@ -15,6 +16,10 @@
 #include <vector>
 
 using namespace webserv;
+
+/*
+ * Might be able to put this somwhere in namespace
+ * */
 
 const char *valid_base_directives_array[] = {"server"};
 
@@ -207,6 +212,10 @@ const ServerConfigParser::map_type&	ServerConfigParser::get_config() const
 pair<ServerConfigParser::const_iterator_type, ServerConfigParser::const_iterator_type>
 ServerConfigParser::find_values(const string &key) const
 {
+	ServerConfigParser::cit_t it = _config.find(key);
+
+	if (it == _config.end())
+		throw BaseConfig::ConfigException("key {" + key + "} not found in find_values.");
 	return (_config.equal_range(key));
 }
 
