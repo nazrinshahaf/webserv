@@ -9,6 +9,7 @@
 #include <map>
 #include <string>
 #include <poll.h>
+#include "Request.hpp"
 
 namespace webserv 
 {
@@ -76,6 +77,7 @@ namespace webserv
 		private:
 			std::vector<ListeningSocket>		_sockets;
     		std::map<int, std::string>    		_client_sockets;
+    		std::map<int, Request>    			_requests;
 			ServerConfigParser					_config;
 
 			enum	log_level
