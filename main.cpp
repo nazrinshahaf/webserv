@@ -20,26 +20,23 @@
 #include <fcntl.h>
 
 using std::string;
+using std::cout;
+using std::endl;
 
 using namespace webserv;
 
-int start_server()
+void start_server()
 {
-	try
-	{
-		std::ifstream	conf_file("./webserv.conf");
-		webserv::ServerConfigParser	config_parser(conf_file);
-		config_parser.parse_config();
-		config_parser.validate_config();
-		Server				server(config_parser);
-		server.launch();
-	}
-	catch (std::exception &e)
-	{
-		cout << RED << e.what() << RESET << endl;
-		return (-1);
-	}
-	return (0);
+	std::ifstream		conf_file("./webserv.conf");
+	ServerConfigParser	config_parser(conf_file);
+
+	config_parser.parse_config();
+	config_parser.validate_config();
+
+	cout << config_parser << endl;
+
+	Server				server(config_parser);
+	server.launch();
 }
 
 int main(void)
@@ -55,7 +52,15 @@ int main(void)
     //     perror("Could not find webserv.conf in current directory");
     //     return -1;
     // }
-    if (start_server() == -1)
-		return (-1);
+	
+	try
+	{
+		start_server();
+	}
+	catch (std::exception &e)
+	{
+		cout << RED << e.what() << RESET << endl;
+		return (1);
+	}
 	return (0);
 }
