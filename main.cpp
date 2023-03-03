@@ -1,3 +1,9 @@
+#include "ServerConfigParser.hpp"
+#include "Server.hpp"
+#include "Request.hpp"
+#include "colours.h"
+
+#include <exception>
 #include <ios>
 #include <map>
 #include <set>
@@ -11,31 +17,29 @@
 #include <unistd.h>
 #include <iostream>
 #include <poll.h>
-#include "Request.hpp"
 #include <fcntl.h>
-#include "Server.hpp"
-#include "ServerConfigParser.hpp"
 
 using std::string;
 
 using namespace webserv;
 
-void start_server()
+int start_server()
 {
-	std::ifstream	conf_file("./webserv.conf");
-	webserv::ServerConfigParser	config_parser(conf_file);
-
-	config_parser.parse_config();
-	config_parser.validate_config();
-
-    Server				server(config_parser);
-    //ListeningSocket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);
-    //server.add_socket(AF_INET, SOCK_STREAM, 0, 8001, INADDR_ANY, 10);
-    //server.add_socket(AF_INET, SOCK_STREAM, 0, 91, INADDR_ANY, 10);
-    //server.add_socket(AF_INET, SOCK_STREAM, 0, 80, INADDR_ANY, 10);
-    server.launch();
-    // server.add_socket(AF_INET, SOCK_STREAM, 0, 81, INADDR_ANY, 10);
-
+	try
+	{
+		std::ifstream	conf_file("./webserv.conf");
+		webserv::ServerConfigParser	config_parser(conf_file);
+		config_parser.parse_config();
+		config_parser.validate_config();
+		Server				server(config_parser);
+		server.launch();
+	}
+	catch (std::exception &e)
+	{
+		cout << RED << e.what() << RESET << endl;
+		return (-1);
+	}
+	return (0);
 }
 
 int main(void)
@@ -51,5 +55,7 @@ int main(void)
     //     perror("Could not find webserv.conf in current directory");
     //     return -1;
     // }
-    start_server();
+    if (start_server() == -1)
+		return (-1);
+	return (0);
 }

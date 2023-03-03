@@ -231,7 +231,22 @@ namespace webserv
 			void		validate_listen(const ServerNormalDirectiveConfig &directive) const;
 			void		validate_error_log(const ServerNormalDirectiveConfig &directive) const;
 			void		validate_error_page(const ServerNormalDirectiveConfig &directive) const;
-			void		validate_allowed_methods(const ServerLocationDirectiveConfig &directive, const ServerLocationDirectiveConfig::pair_type &pair) const;
+			void		validate_allowed_methods(const ServerLocationDirectiveConfig &directive,
+							const ServerLocationDirectiveConfig::pair_type &pair) const;
+
+			class   ServerParserException : public std::exception
+			{
+				public:
+					ServerParserException(string err_msg) : _err_msg(err_msg) {};
+					~ServerParserException() _NOEXCEPT {};
+
+					virtual const char  *what(void) const throw() {
+						return (_err_msg.c_str());
+					};
+
+				private:
+					string  _err_msg;
+			};
 
 			std::set<string>	_valid_base_directives;
 			std::set<string>	_valid_server_normal_directives;

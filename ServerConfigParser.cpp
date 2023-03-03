@@ -49,11 +49,11 @@ ServerConfigParser::ServerConfigParser(const string &config_str) : _config_str(c
 ServerConfigParser::ServerConfigParser(std::ifstream &config_file)
 {
 #ifdef PRINT_MSG
-	cout << "ServerConfigParser ifstream Assignement Constructor Called" << endl;
+	cout << "ServerConfigParser ifstream Assignment Constructor Called" << endl;
 #endif // !PRINT_MSG
 
-	//if (!config_file)
-	//	throw someshit here
+	if (!config_file)
+		throw ServerParserException("config_file not found in ServerConfigParser ifstream Assignment Constructor");
 	if (config_file.is_open())
 	{
 		std::ostringstream	ss;
@@ -101,7 +101,7 @@ void ServerConfigParser::parse_config(void)
 	string			config(_config_str);
 
 	if (config.length() == 0)
-		cout << "throw u passed an empty conf fucker" << endl; //throw error
+		throw ServerParserException("U passed an empty config mother fucker");
 
 	//cout << "===============" << endl;
 	//cout << config;
@@ -134,10 +134,7 @@ void ServerConfigParser::parse_config(void)
 			ServerConfig	server_config;
 
 			if (line_length == colon_distance)
-			{
-				cout << "throw found non bracket after server keyword" << endl;
-				exit(1);
-			}
+				throw ServerParserException("Found non bracket after server keyword");
 
 			config = config.substr(config.find_first_of("{") + 1);
 			//cout << "Config" << endl;
@@ -155,10 +152,7 @@ void ServerConfigParser::parse_config(void)
 		//	cout << "other valid keyword" << endl;
 		//}
 		else
-		{
-			cout << "throw {" << key << "} not keyword" << endl; //throw someshit
-			return;
-		}
+			throw ServerParserException("Invalid key found in config { " + key + "} not a keyword");
 	}
 	//cout << *this << endl;
 }
@@ -251,10 +245,7 @@ string	ServerConfigParser::extract_bracket_content(std::string *config,
 		//cout << "close_bracket_pos : " << close_bracket_pos << endl;
 		//cout << "........................." << endl;
 		if (close_bracket_pos == server_block.npos)
-		{
-			cout << "throw no closing bracket" << endl; //throw some error
-			exit(1);
-		}
+			throw ServerParserException("No closing bracket found");
 		if (open_bracket_pos < close_bracket_pos)
 		{
 			server_block = server_block.substr(close_bracket_pos + 1);
@@ -267,7 +258,7 @@ string	ServerConfigParser::extract_bracket_content(std::string *config,
 				open_bracket_pos == string::npos)
 		{
 			if (close_bracket_pos == string::npos) //if no closing bracket is found.
-				cout << "throw no closing bracket found" << endl;
+				throw ServerParserException("No closing bracket found");
 			final_pos += close_bracket_pos;
 			break ;
 		}
@@ -318,8 +309,7 @@ string	ServerConfigParser::extract_key(const string &line) const
 	}
 	catch (...)
 	{
-		cout << "throw no key to extract" << endl;
-		exit(1);
+		throw ServerParserException("No key to extract");
 	}
 	//cout << "----------------" << endl;
 	//cout << "key = [" << key << "]" << endl;
@@ -351,8 +341,7 @@ string	ServerConfigParser::extract_value(const string &line, int look_for_bracke
 	}
 	catch (...)
 	{
-		cout << "throw some error value not found" << endl;
-		exit(1);
+		throw ServerParserException("throw some error value not found");
 	}
 
 	//cout << "----------------" << endl;
@@ -445,10 +434,7 @@ ServerConfig	ServerConfigParser::parse_server_block(const std::string &server_bl
 			server_config.insert_config(std::make_pair(key, &location_directive));
 		}
 		else
-		{
-			cout << "throw key {" << key << "} is not a valid normal directive" << endl;
-			exit(1);
-		}
+			throw ServerParserException("key {" + key + "} is not a valid normal directive");
 	}
 	return (server_config);
 }
@@ -468,10 +454,7 @@ ServerNormalDirectiveConfig		ServerConfigParser::parse_server_normal_directive(c
 		string	value2;
 
 		if (value_count != 2)
-		{
-			cout << "throw some error wrong value count for key {" << key << "}" << endl;
-			exit(1);
-		}
+			throw ServerParserException("Some error wrong value count for key {" + key + "}");
 		temp = extract_value(normal_directive_copy);
 		value = extract_key(temp);
 		value2 = extract_value(temp);
@@ -481,7 +464,8 @@ ServerNormalDirectiveConfig		ServerConfigParser::parse_server_normal_directive(c
 	{
 		if (value_count != 1)
 		{
-			cout << "throw some error wrong value count for key {" << key << "}" << endl;
+			
+			throw ServerParserException("Some error wrong value count for key {" + key + "}");
 			exit(1);
 		}
 		value = extract_value(normal_directive_copy);
@@ -521,10 +505,7 @@ ServerLocationDirectiveConfig	ServerConfigParser::parse_server_location_block(co
 			location_block_copy = location_block_copy.substr(location_block_copy.find_first_of(";") + 1);
 		}
 		else
-		{
-			cout << "throw key {" << key << "} is not a valid location directive" << endl;
-			exit(1);
-		}
+			throw ServerParserException("key {" + key + "} is not a valid location directive");
 	}
 	return (location_directive);
 }
@@ -586,7 +567,7 @@ int			is_string_path(const string &str)
 void		ServerConfigParser::validate_listen(const ServerNormalDirectiveConfig &directive) const
 {
 	if (!is_string_num(directive.get_value()))
-		cout << RED "throw Invalid character found in listen directive" RESET << endl;
+		throw ServerParserException("Invalid character found in listen directive");
 }
 
 void		ServerConfigParser::validate_error_log(const ServerNormalDirectiveConfig &directive) const
@@ -595,13 +576,13 @@ void		ServerConfigParser::validate_error_log(const ServerNormalDirectiveConfig &
 
 	std::transform(debug_level.begin(), debug_level.end(), debug_level.begin(), ::toupper); //convert to uppercase
 	if (debug_level != "DEBUG" && debug_level != "INFO" && debug_level != "WARN" && debug_level != "ERROR")
-		cout << RED "throw Invalid debug level" RESET << endl;
+		throw ServerParserException("Invalid debug level");
 }
 
 void		ServerConfigParser::validate_error_page(const ServerNormalDirectiveConfig &directive) const
 {
 	if (!is_string_num(directive.get_value()))
-		cout << RED "throw Invalid character found in error_page number directive" RESET << endl;
+		throw ServerParserException("Invalid character found in error_page number directive");
 }
 
 void		ServerConfigParser::validate_allowed_methods(const ServerLocationDirectiveConfig &directive,
@@ -609,20 +590,14 @@ void		ServerConfigParser::validate_allowed_methods(const ServerLocationDirective
 {
 	int	method_count = count_values_in_line(pair.second) + 1;
 	if (method_count > 3)
-	{
-		cout << RED "throw Too many methods in allowed_methods" RESET << endl;
-		return;
-	}
+		throw ServerParserException("Too many methods in allowed_mothods");
 
 	std::vector<string>	methods = directive.split_methods();
 	for (std::vector<string>::iterator method = methods.begin(); method != methods.end(); method++)
 	{
 		std::transform(method->begin(), method->end(), method->begin(), ::toupper); //convert to uppercase
 		if (*method != "GET" && *method != "POST" && *method != "DELETE")
-		{
-			cout << RED "throw Invalid allowed_methods" RESET << endl;
-			return ;
-		}
+			throw ServerParserException("Invalid allowed_methods");
 	}
 }
 
