@@ -103,11 +103,11 @@ void	Server::handler(ListeningSocket &socket)
 				root_path = socket.get_config().find_normal_directive("root").get_value();
 			}
 			catch (std::exception &e) {
-				log(ERROR, string(e.what()), 2, socket.get_config());
+				log(WARN, string(e.what()), 2, socket.get_config());
 				root_path = "/";
 			}
-            cout << "The req.path is |" << req.path() << "|\n";
-			//dynamic_cast<ServerNormalDirectiveConfig&>((*((socket.get_config().find_values("root")).first)));
+            log(INFO, "The request path is " + root_path);
+            log(INFO, "The request path + root is " + root_path + req.path());
 
             std::ifstream myfile;
             string entireText;

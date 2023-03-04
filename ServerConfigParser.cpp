@@ -545,16 +545,12 @@ void		ServerConfigParser::initialize_valid_directives(const char **directives, s
 
 // =========================== validation ==================================
 
-int			is_string_num(const string &str)
+bool is_string_num(const string &str)
 {
-    string::const_iterator	c = str.begin();
-
-    while (c != str.end() && std::isdigit(*c))
-		++c;
-    return (!str.empty() && c == str.end());
+	return (str.find_first_not_of("0123456789") == str.npos);
 }
 
-int			is_string_path(const string &str)
+bool is_string_path(const string &str)
 {
 	for (string::const_iterator c = str.begin(); c != str.end(); c++)
 	{

@@ -20,7 +20,9 @@ using namespace webserv;
  * @note 'htonl' : htonl converts a long from host byte order 
  *	to network byte order.
  *
- * * : https://stackoverflow.com/a/41490982
+ * * : https://stackoverflow.com/a/41490982.
+ *	https://stackoverflow.com/q/24194961 (SO_REUSEPORT)
+ *	I need pass in a ref to int if not it wont work.
  * */
 
 Socket::Socket(const int &domain, const int &service, const int &protocol,
@@ -33,9 +35,10 @@ Socket::Socket(const int &domain, const int &service, const int &protocol,
 	_address.sin_family = domain;
 	_address.sin_port = htons(port); 
 	_address.sin_addr.s_addr = htonl(interface);
+	int enable = 1;
 
 	_sock = socket(domain, service, protocol);
-	setsockopt(_sock, SOL_SOCKET, SO_REUSEADDR, NULL, 0); //So u can reuse the socket port might lead to specific issues*
+	setsockopt(_sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)); //So u can reuse the socket port might lead to specific issues*
 	test_connection(_sock, "Default");
 }
 
