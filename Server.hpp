@@ -75,11 +75,6 @@ namespace webserv
 			// ListeningSocket	*get_listening_socket(void) const;
 
 		private:
-			std::vector<ListeningSocket>		_sockets;
-    		std::map<int, std::string>    		_client_sockets;
-    		std::map<int, Request>    			_requests;
-			ServerConfigParser					_config;
-
 			enum	log_level
 			{
 				DEBUG,
@@ -87,6 +82,12 @@ namespace webserv
 				WARN,
 				ERROR
 			};
+			static const log_level			_base_log_level = INFO;
+
+			std::vector<ListeningSocket>	_sockets;
+    		std::map<int, std::string>    	_client_sockets;
+    		std::map<int, Request>    		_requests;
+			ServerConfigParser				_config;
 
 			void	acceptor(ListeningSocket &socket);
 			void	handler(ListeningSocket &socket);
@@ -95,8 +96,10 @@ namespace webserv
 			void	log(const log_level &level, const string &log_msg,
 							const int &log_to_file = 0,
 							ServerConfig const &server = ServerConfig()) const;
-			void	print_debug_level(const log_level &level, const int &log_to_file, std::fstream &log_file) const;
-			void	print_debug_msg(const log_level &level, const int &log_to_file, std::fstream &log_file, const string &log_msg) const;
+			void	print_debug_level(const log_level &level, const int &log_to_file, std::fstream &log_file,
+						const log_level &file_log_level) const;
+			void	print_debug_msg(const log_level &level, const int &log_to_file, std::fstream &log_file,
+						const log_level &file_log_level,const string &log_msg) const;
 
 	};
 }

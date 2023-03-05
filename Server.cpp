@@ -81,7 +81,6 @@ void	Server::handler(ListeningSocket &socket)
 
     for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); )
     {
-		log(DEBUG, "Client connected with ip : " + socket.get_client_ip(), 2, socket.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
         char buffer[65535] = {0};
 		string buffer_str;
 
@@ -142,7 +141,7 @@ void	Server::handler(ListeningSocket &socket)
 			else
 				entireText += header;
             while (std::getline(myfile, line))
-                entireText += line;
+                entireText += (line + '\n');
             myfile.close();
 			if (req.done())
 			{
@@ -161,17 +160,16 @@ void	Server::handler(ListeningSocket &socket)
 				log(DEBUG, "------ Message Sent to Client ------ ");
 				close(it->first);
 				_requests.erase(it->first);
-				log(DEBUG, "Client closed with ip : " + string(inet_ntoa(address_read.sin_addr)));
-				log(WARN, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
+				log(INFO, "Client closed with ip : " + socket.get_client_ip(), 2, socket.get_config());
+				log(ERROR, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
 				log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, socket.get_config());
 				_client_sockets.erase(it++);
 			}
         }
         catch (std::exception &e)
         {
-			log(DEBUG, "Client closed with ip : " + socket.get_client_ip(), 2, socket.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
 			log(WARN, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
-		    log(DEBUG, "\x1B[31mEXCEPTION OCCURED: "  + string(e.what()) + string(inet_ntoa(address_read.sin_addr)) + string("\x1B[0m"));
+		    log(ERROR, string(RED) + "EXCEPTION OCCURED : " + string(e.what()) + ". Client with ip " + socket.get_client_ip() +" suddenly closed." + string(RESET), 2, socket.get_config());
             send(it->first , temp_message , strlen(temp_message), MSG_OOB);
             close(it->first);
 			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, socket.get_config());
@@ -196,6 +194,7 @@ void	Server::acceptor(ListeningSocket &socket)
 	if (new_socket_fd >= 0)
 	{
 		log(DEBUG, string("Server socket open with fd ") + to_string(new_socket_fd), 2, socket.get_config());
+		log(INFO, "Client connected with ip : " + socket.get_client_ip(), 2, socket.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
 		_client_sockets[new_socket_fd] = string("");
 	}
 }
@@ -252,46 +251,48 @@ void	print_time(std::ostream &stream)
 		<< std::setfill('0')<< std::setw(2) << now->tm_hour << ":"
 		<< std::setfill('0')<< std::setw(2) << now->tm_min << ":"
 		<< std::setfill('0')<< std::setw(2) << now->tm_sec<< " - ";
-	std::setfill(prev_fill);
+	std::cout.fill(prev_fill);
+
 }
 
-void	Server::print_debug_level(const log_level &level, const int &log_to_file, std::fstream &log_file) const
+void	Server::print_debug_level(const log_level &level, const int &log_to_file, std::fstream &log_file, const log_level &file_log_level) const
 {
 	switch(level)
 	{
 		case 0:
-			if (log_to_file != 1)
+			if (log_to_file != 1 && level >= _base_log_level)
 				cout << GREEN "[DEBUG]\t" RESET;
-			if (log_to_file >= 1)
+			if (log_to_file >= 1 && level >= file_log_level)
 				log_file << "[DEBUG]\t";
 			break;
 		case 1:
-			if (log_to_file != 1)
+			if (log_to_file != 1 && level >= _base_log_level)
 				cout << BLUE "[INFO]\t" RESET;
-			if (log_to_file >= 1)
+			if (log_to_file >= 1 && level >= file_log_level)
 				log_file << "[INFO]\t";
 			break;
 		case 2:
-			if (log_to_file != 1)
+			if (log_to_file != 1 && level >= _base_log_level)
 				cout << YELLOW "[WARN]\t" RESET;
-			if (log_to_file >= 1)
+			if (log_to_file >= 1 && level >= file_log_level)
 				log_file << "[WARN]\t";
 			break;
 		case 3:
-			if (log_to_file != 1)
+			if (log_to_file != 1 && level >= _base_log_level)
 				cout << RED "[ERROR]\t" RESET;
-			if (log_to_file >= 1)
+			if (log_to_file >= 1 && level >= file_log_level)
 				log_file << "[ERROR]\t";
 			break;
 		break;
 	}
 }
 
-void	Server::print_debug_msg(const log_level &level, const int &log_to_file, std::fstream &log_file, const string &log_msg) const
+void	Server::print_debug_msg(const log_level &level, const int &log_to_file, std::fstream &log_file,
+			const log_level &file_log_level, const string &log_msg) const
 {
 	string	log_msg_copy = log_msg;
 
-	while(1)
+	while (1)
 	{
 		string log_line;
 		if (log_msg_copy.length() == 0)
@@ -300,17 +301,23 @@ void	Server::print_debug_msg(const log_level &level, const int &log_to_file, std
 			log_line = log_msg_copy;
 		else
 			log_line = log_msg_copy.substr(0, log_msg_copy.find_first_of("\n"));
-		print_debug_level(level, log_to_file, log_file);
+		print_debug_level(level, log_to_file, log_file, file_log_level);
 		switch (log_to_file)
 		{
-			case 2:
+			case 2 :
+				if (level < _base_log_level)
+					break;
 				print_time(cout);
 				cout << log_line << endl;
-			case 1:
+			case 1 :
+				if (file_log_level < _base_log_level)
+					break;
 				print_time(log_file);
 				log_file << log_line << endl;
 				break;
-			case 0:
+			case 0 :
+				if (level < _base_log_level)
+					break;
 				print_time(cout);
 				cout << log_line << endl;
 		}
@@ -322,7 +329,7 @@ void	Server::print_debug_msg(const log_level &level, const int &log_to_file, std
 
 void	Server::log(const log_level &level, const string &log_msg, const int &log_to_file, ServerConfig const &server) const
 {
-	log_level		base_log_level = DEBUG;
+	log_level		file_log_level;
 	std::fstream	log_file;
 
 	if (log_to_file >= 1) //opening file if log_to_file is set to 1 or 2
@@ -340,18 +347,16 @@ void	Server::log(const log_level &level, const string &log_msg, const int &log_t
 		std::transform(temp_log_level.begin(), temp_log_level.end(), temp_log_level.begin(), ::toupper); //convert to uppercase
 
 		if (temp_log_level == "DEBUG") //no switch case for string 
-			base_log_level = DEBUG;
+			file_log_level = DEBUG;
 		else if (temp_log_level == "INFO")
-			base_log_level = INFO;
+			file_log_level = INFO;
 		else if (temp_log_level == "WARN")
-			base_log_level = WARN;
+			file_log_level = WARN;
 		else if (temp_log_level == "ERROR")
-			base_log_level = ERROR;
+			file_log_level = ERROR;
 	}
 
-	if (level < base_log_level)
-		return ;
-
-	print_debug_msg(level, log_to_file, log_file, log_msg);
+	print_debug_msg(level, log_to_file, log_file, file_log_level, log_msg);
 	log_file.close();
 }
+
