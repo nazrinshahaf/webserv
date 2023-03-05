@@ -133,10 +133,10 @@ void	Server::handler(ListeningSocket &socket)
                 myfile.open(root_path + "/index.html");
             else
                 myfile.open(root_path + req.path());
-            if (!myfile)
+			if (!myfile)
 			{
 				entireText += header_404;
-                myfile.open("public/404.html");
+				myfile.open("public/404.html");
 			}
 			else
 				entireText += header;

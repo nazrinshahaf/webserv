@@ -166,7 +166,11 @@ void	ServerConfigParser::validate_config(void)
 			ServerConfig					server_config = dynamic_cast<ServerConfig&>(*config_block->second);
 			ServerConfig::map_type			server_map = server_config.get_server_config();
 
-			for (ServerConfig::cit_t server_line = server_map.begin(); server_line != server_map.end(); server_line++)
+			if (server_map.find("listen") == server_map.end())
+				throw ServerParserException("Server block must contain at least one listen");
+			else if (server_map.count("listen") == 2)
+				throw ServerParserException("Server block must contain only one listen");
+			for (ServerConfig::cit_t server_line = server_map.begin(); server_line != server_map.end(); server_line++) //check each individual directive
 			{
 				int	directive_type = is_valid_server_normal_directive(server_line->first);
 				if (directive_type == 1 || directive_type == 2)

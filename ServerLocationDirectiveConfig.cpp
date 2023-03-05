@@ -44,6 +44,12 @@ void	ServerLocationDirectiveConfig::set_path(const string &path_to_set)
 	_path = path_to_set;
 }
 
+
+const string &ServerLocationDirectiveConfig::get_path(void) const
+{
+	return (_path);
+}
+
 const ServerLocationDirectiveConfig::map_type &
 ServerLocationDirectiveConfig::get_config() const
 {

@@ -39,7 +39,8 @@ namespace webserv
 
 			//void	insert_config(const string &key, const string &value);
 		
-			void	set_path(const string &path_to_set);
+			void			set_path(const string &path_to_set);
+			const string	&get_path(void) const;
 
 			void	insert_config(const std::pair<string, string> &pair_to_insert);
 

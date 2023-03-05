@@ -4,6 +4,7 @@
 #include "BaseConfig.hpp"
 #include "ServerBaseConfig.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
+#include "ServerLocationDirectiveConfig.hpp"
 
 #include <map>
 #include <string>
@@ -83,6 +84,18 @@ namespace webserv
 			 * */
 
 			const ServerNormalDirectiveConfig	&find_normal_directive(const string &key) const;
+
+			/*
+			 * find_location_directive.
+			 * Searches for a location.
+			 *
+			 * @return : The location_directive.
+			 *
+			 * @param 'key' : the key of the location_directive to look
+			 *	for.
+			 * */
+
+			const ServerLocationDirectiveConfig	&find_location_directive(const string &path) const;
 
 			/*
 			 * insert_config.

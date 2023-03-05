@@ -4,6 +4,7 @@
 #include "ServerLocationDirectiveConfig.hpp"
 #include "Socket.hpp"
 #include <string>
+#include <utility>
 
 using namespace webserv;
 
@@ -53,19 +54,37 @@ ServerConfig::find_values(const string &key) const
 	ServerConfig::cit_t it = _server_config.find(key);
 
 	if (it == _server_config.end())
-		throw ConfigException("key {" + key + "} not found in find_values.");
+		throw ConfigException("Key {" + key + "} not found in find_values.");
 	return (_server_config.equal_range((key)));
 }
 
 const ServerNormalDirectiveConfig&
 ServerConfig::find_normal_directive(const string &key) const
 {
-	ServerConfig::cit_t it = _server_config.find((key));
+	ServerConfig::cit_t it = _server_config.find(key);
 
 	if (it == _server_config.end())
-		throw ConfigException("key {" + key + "} not found in find_normal_directive.");
-	const ServerNormalDirectiveConfig *nd = dynamic_cast<const ServerNormalDirectiveConfig*>(it->second);
+		throw ConfigException("Key {" + key + "} not found in find_normal_directive.");
+	ServerNormalDirectiveConfig *nd = dynamic_cast<ServerNormalDirectiveConfig*>(it->second);
 	return (*nd);
+}
+
+const ServerLocationDirectiveConfig&
+ServerConfig::find_location_directive(const string &path) const
+{
+	pair<ServerConfig::cit_t, ServerConfig::cit_t>	range = _server_config.equal_range("location");
+	if (range.first == _server_config.end())
+		throw ConfigException("No location blocks found in find_location_directive");
+
+	ServerLocationDirectiveConfig *location;
+	for (ServerConfig::cit_t location_block = range.first; location_block != range.second; location_block++)
+	{
+		location = dynamic_cast<ServerLocationDirectiveConfig*>(range.first->second);
+		if (location->get_path() == path) {
+			break;
+		}
+	}
+	return (*location);
 }
 
 /*
