@@ -41,8 +41,8 @@ void start_server()
 
 	cout << config_parser << endl;
 
-	//Server				server(config_parser);
-	//server.launch();
+	Server				server(config_parser);
+	server.launch();
 	
 	/* ServerNormalDirectiveConfig	nd; */
 	/*  */

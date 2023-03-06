@@ -74,7 +74,8 @@ void	Server::handler(ListeningSocket &socket)
     long	valread;
 
 	const char *temp_message = "HTTP/1.1 500 FUCK OFF\r\nContent-Type: text/html\r\nContent-Length: 119\r\n\r\n";
-	const char *header = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n";
+	const char *header = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n"; // Dynamically add content length TODO
+	const char *header2 = "HTTP/1.1 200 OK\nContent-Type: image/*\r\n\r\n";
 	const char *header_404 = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
 	int i;
     // const char *err_msg = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n<!DOCTYPE html><html><body><h1>404 Not Found</h1></body></html>";
@@ -130,18 +131,26 @@ void	Server::handler(ListeningSocket &socket)
 			// Defaults to index.html
 			// TODO: implement in responder
             if (req.path() == "/")
-                myfile.open(root_path + "/index.html");
+                myfile.open(root_path + "/index.html", std::ios::binary);
             else
-                myfile.open(root_path + req.path());
+                myfile.open(root_path + req.path(), std::ios::binary);
 			if (!myfile)
 			{
 				entireText += header_404;
-				myfile.open("public/404.html");
+				myfile.open("public/404.html", std::ios::binary);
 			}
 			else
-				entireText += header;
-            while (std::getline(myfile, line))
-                entireText += (line + '\n');
+			{
+				if (req.path() == "/edlim.jpg" || req.path() == "/edlim_lrg.jpg" || req.path() == "/jng.png")
+					entireText += header2;
+				else
+					entireText += header;
+			}
+			char buffer[65535]; // create a buffer
+			while (myfile.read(buffer, sizeof(buffer)))
+				entireText.append(buffer, myfile.gcount());
+            	// send(it->first, buffer, myfile.gcount(), 0);
+			entireText.append(buffer, myfile.gcount());
             myfile.close();
 			if (req.done())
 			{
@@ -156,7 +165,7 @@ void	Server::handler(ListeningSocket &socket)
 				// 		break;
 				// 	std::cout << *tempit;
 				// }
-				send(it->first , entireText.c_str() , strlen(entireText.c_str()), MSG_OOB);
+            	send(it->first, entireText.c_str(), entireText.length(), 0);
 				log(DEBUG, "------ Message Sent to Client ------ ");
 				close(it->first);
 				_requests.erase(it->first);
