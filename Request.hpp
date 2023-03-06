@@ -22,12 +22,12 @@ namespace webserv
 			string						_protocol_version;
 			int							_socket;
 			bool						_is_done;
-			void						find_request_type();
+			bool						_bad_request;
+			int							find_request_type();
 			void						find_request_path();
 			void						find_request_protocol_version();
 			void						parse_headers();
 			void						process_post();
-
 
 		public:
 			/**
@@ -42,16 +42,17 @@ namespace webserv
 
 			~Request();
 
-			const string    				&body() const;
+			string    						&body();
 			const string 					&type() const;
 			const string 					&path() const;
 			const string 					&protocol_version() const;
 			const std::map<string, string>	&headers() const;
 			const int						&socket() const;
 			const string					to_str() const;
+			bool							bad_request();
 			bool							done();
 			void							add_body(string buffer);
-
+			void							process_image();
 			struct RequiredHeaderParamNotGivenException : public std::exception {
 				const char * what () const throw () {
 					return "required header has not been supplied";

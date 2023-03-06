@@ -77,113 +77,104 @@ void	Server::handler(ListeningSocket &socket)
 	const char *header = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n"; // Dynamically add content length TODO
 	const char *header2 = "HTTP/1.1 200 OK\nContent-Type: image/*\r\n\r\n";
 	const char *header_404 = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
-	int i;
     // const char *err_msg = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n<!DOCTYPE html><html><body><h1>404 Not Found</h1></body></html>";
 
     for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); )
     {
         char buffer[65535] = {0};
-		string buffer_str;
-
-        valread = recv(it->first , buffer, 65535, 0);
-        if (valread < 0)
-		{
-			++it;
-            continue;
-		}
-
-		i = 0;
-		while (i < valread)
-		{
-			buffer_str.push_back(buffer[i++]);
-		}
+		string temp;
+		
 	
-        it->second += buffer_str;
-        try
-        {
-            Request req(buffer_str, it->first);
-			string	root_path;
+       	valread = recv(it->first ,buffer, 100 - 1, 0);
+		if (valread < 0)
+		{
+			it++;
+			continue;
+		}
 
-			if (_requests.find(it->first) == _requests.end())
-			{
-				_requests[it->first] = req;
-			}
-			else
-			{
-				req = _requests[it->first];
-				req.add_body(buffer_str);
-			}
-            log(DEBUG, req.to_str());
-			try {
-				root_path = socket.get_config().find_normal_directive("root").get_value();
-			}
-			catch (std::exception &e) {
-				log(WARN, string(e.what()), 2, socket.get_config());
-				root_path = "/";
-			}
-            log(INFO, "The request path is " + root_path);
-            log(INFO, "The request path + root is " + root_path + req.path());
+		while (valread > 0)
+		{
+			temp.append(buffer, valread);
+	       	valread = recv(it->first ,buffer, 100 - 1, 0);
+		}
 
-            std::ifstream myfile;
-            string entireText;
-            string line;
+		Request req(temp, it->first);
+		string root_path;
+		try 
+		{
+			root_path = socket.get_config().find_normal_directive("root").get_value();
+		}
+		catch (std::exception &e)
+		{
+			log(WARN, string(e.what()), 2, socket.get_config());
+			root_path = "/";
+		}
 
-			// Defaults to index.html
-			// TODO: implement in responder
-            if (req.path() == "/")
-                myfile.open(root_path + "/index.html", std::ios::binary);
-            else
-                myfile.open(root_path + req.path(), std::ios::binary);
-			if (!myfile)
-			{
-				entireText += header_404;
-				myfile.open("public/404.html", std::ios::binary);
-			}
-			else
-			{
-				if (req.path() == "/edlim.jpg" || req.path() == "/edlim_lrg.jpg" || req.path() == "/jng.png")
-					entireText += header2;
-				else
-					entireText += header;
-			}
-			char buffer[65535]; // create a buffer
-			while (myfile.read(buffer, sizeof(buffer)))
-				entireText.append(buffer, myfile.gcount());
-            	// send(it->first, buffer, myfile.gcount(), 0);
-			entireText.append(buffer, myfile.gcount());
-            myfile.close();
-			if (req.done())
-			{
-				log(DEBUG, "[[[[[[[Dislaying body]]]]]]]");
-				std::cout << req.body();
-				log(DEBUG, "[[[[[[[Stop Dislaying body]]]]]]");
-				// int i = 0;
-				// for (string::const_iterator tempit = req.body().begin(); tempit != req.body().end(); tempit++)
-				// {
-				// 	i++;
-				// 	if (i == 6)
-				// 		break;
-				// 	std::cout << *tempit;
-				// }
-            	send(it->first, entireText.c_str(), entireText.length(), 0);
-				log(DEBUG, "------ Message Sent to Client ------ ");
-				close(it->first);
-				_requests.erase(it->first);
-				log(INFO, "Client closed with ip : " + socket.get_client_ip(), 2, socket.get_config());
-				log(ERROR, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
-				log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, socket.get_config());
-				_client_sockets.erase(it++);
-			}
-        }
-        catch (std::exception &e)
-        {
-			log(WARN, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
-		    log(ERROR, string(RED) + "EXCEPTION OCCURED : " + string(e.what()) + ". Client with ip " + socket.get_client_ip() +" suddenly closed." + string(RESET), 2, socket.get_config());
+		if (_requests.find(it->first) == _requests.end()) // if this request is newd
+			_requests[it->first] = req;
+		else //if this request is already being processed
+		{
+			req = _requests[it->first];
+			req.add_body(temp);
+		}
+
+		if (req.bad_request())
+		{
+			log(DEBUG, "\x1B[31mBAD REQUEST RECEIVED: " + string("\x1B[0m"));
+		    log(INFO, "Client closed with ip : " + socket.get_client_ip(), 2, socket.get_config());
             send(it->first , temp_message , strlen(temp_message), MSG_OOB);
             close(it->first);
+			log(ERROR, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
 			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, socket.get_config());
 			_client_sockets.erase(it++);
-        }
+		}
+
+		
+	    
+        log(DEBUG, req.to_str());
+        std::ifstream myfile;
+        string entireText;
+        string line;
+		// Defaults to index.html
+		// TODO: implement in responder
+        if (req.path() == "/")
+            myfile.open(root_path + "/index.html", std::ios::binary);
+        else
+            myfile.open(root_path + req.path(), std::ios::binary);
+		if (!myfile)
+		{
+			entireText += header_404;
+			myfile.open("public/404.html", std::ios::binary);
+		}
+		else
+		{
+			if (req.path() == "/edlim.jpg" || req.path() == "/edlim_lrg.jpg" || req.path() == "/jng.png")
+				entireText += header2;
+			else
+				entireText += header;
+		}
+
+		char read_buffer[65535]; // create a read_buffer
+		while (myfile.read(read_buffer, sizeof(read_buffer)))
+			entireText.append(read_buffer, myfile.gcount());
+        	// send(it->first, read_buffer, myfile.gcount(), 0);
+        while (std::getline(myfile, line))
+            entireText += line;
+		entireText.append(read_buffer, myfile.gcount());
+        myfile.close();
+		if (req.done())
+		{
+			if (req.path() == "/upload.html")
+				req.process_image();
+			send(it->first , entireText.c_str() , entireText.length(), 0);
+			log(DEBUG, "------ Message Sent to Client ------ ");
+			close(it->first);
+			_requests.erase(it->first);
+			log(INFO, "Client closed with ip : " + socket.get_client_ip(), 2, socket.get_config());
+			log(ERROR, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
+			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, socket.get_config());
+			_client_sockets.erase(it++);
+		}
     }
 }
 
