@@ -9,21 +9,35 @@ using std::endl;
 ServerNormalDirectiveConfig::ServerNormalDirectiveConfig()
 {
 #ifdef PRINT_MSG
-	cout << "ServerNormalDirectiveConfig Default Constructor called" << endl;
+	cout << GREEN "ServerNormalDirectiveConfig Default Constructor called" RESET << endl;
 #endif
+}
+
+ServerNormalDirectiveConfig::ServerNormalDirectiveConfig(const ServerNormalDirectiveConfig &to_copy) :
+	_normal_directive_config(to_copy._normal_directive_config)
+{
+#ifdef PRINT_MSG
+	cout << GREEN "ServerNormalDirectiveConfig Copy Constructor called" RESET << endl;
+#endif
+}
+
+ServerNormalDirectiveConfig &ServerNormalDirectiveConfig::operator=(const ServerNormalDirectiveConfig &to_copy)
+{
+#ifdef PRINT_MSG
+	cout << GREEN "ServerNormalDirectiveConfig Copy Assignment Operator called" RESET << endl;
+#endif
+	_normal_directive_config = to_copy._normal_directive_config;
+	return (*this);
 }
 
 ServerNormalDirectiveConfig::~ServerNormalDirectiveConfig()
 {
 #ifdef PRINT_MSG
-	cout << "ServerNormalDirectiveConfig Destructor called" << endl;
+	cout << RED "ServerNormalDirectiveConfig Destructor called" RESET << endl;
 #endif
+	//cout << "address of deleted :" << &*this << endl;
 }
 
-ServerNormalDirectiveConfig::ServerNormalDirectiveConfig(const ServerNormalDirectiveConfig &to_copy)
-{
-	_normal_directive_config = to_copy._normal_directive_config;
-}
 
 ServerNormalDirectiveConfig*
 ServerNormalDirectiveConfig::get_base() const

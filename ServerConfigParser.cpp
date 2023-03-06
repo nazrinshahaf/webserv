@@ -1,9 +1,9 @@
 #include "ServerConfigParser.hpp"
 #include "BaseConfig.hpp"
-#include "ServerBaseConfig.hpp"
 #include "ServerConfig.hpp"
 #include "ServerLocationDirectiveConfig.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
+#include "colours.h"
 
 #include <algorithm>
 #include <cctype>
@@ -14,6 +14,9 @@
 #include <sys/_types/_size_t.h>
 #include <utility>
 #include <vector>
+
+using std::cout;
+using std::endl;
 
 using namespace webserv;
 
@@ -33,7 +36,7 @@ const char *valid_server_location_directives_array[] = {"fastcgi_pass",
 ServerConfigParser::ServerConfigParser(const string &config_str) : _config_str(config_str)
 {
 #ifdef PRINT_MSG
-	cout << "ServerConfigParser string Assignement Constructor Called" << endl;
+	cout << GREEN "ServerConfigParser string Assignement Constructor Called" RESET << endl;
 #endif // !PRINT_MSG
 	initialize_valid_directives(valid_base_directives_array,
 			&_valid_base_directives,
@@ -49,7 +52,7 @@ ServerConfigParser::ServerConfigParser(const string &config_str) : _config_str(c
 ServerConfigParser::ServerConfigParser(std::ifstream &config_file)
 {
 #ifdef PRINT_MSG
-	cout << "ServerConfigParser ifstream Assignment Constructor Called" << endl;
+	cout << GREEN "ServerConfigParser ifstream Assignment Constructor Called" RESET << endl;
 #endif // !PRINT_MSG
 
 	if (!config_file)
@@ -75,19 +78,40 @@ ServerConfigParser::ServerConfigParser(const ServerConfigParser &to_copy) :
 	_valid_base_directives(to_copy._valid_base_directives),
 	_valid_server_normal_directives(to_copy._valid_server_normal_directives),
 	_valid_server_location_directives(to_copy._valid_server_normal_directives),
-	_config_str(to_copy._config_str),
-	_config(to_copy._config)
+	_config_str(to_copy._config_str)
 {
 #ifdef PRINT_MSG
-	cout << "ServerConfigParser Copy Constructor Called" << endl;
+	cout << GREEN "ServerConfigParser Copy Constructor Called" RESET << endl;
 #endif // !PRINT_MSG
+	for (cit_t it = to_copy._config.begin(); it != to_copy._config.end(); it++)
+		insert_config(std::make_pair(it->first, it->second));
+}
+
+ServerConfigParser	&ServerConfigParser::operator=(const ServerConfigParser &to_copy)
+{
+#ifdef PRINT_MSG
+	cout << GREEN "ServerConfigParser Copy Assignemnt Operator Called" RESET << endl;
+#endif // !PRINT_MSG
+	_valid_base_directives = to_copy._valid_base_directives;
+	_valid_server_normal_directives = to_copy._valid_server_normal_directives;
+	_valid_server_location_directives = to_copy._valid_server_normal_directives;
+	_config_str = to_copy._config_str;
+
+	for (cit_t it = _config.begin(); it != _config.end(); it++)
+		delete(it->second);
+	for (cit_t it = to_copy._config.begin(); it != to_copy._config.end(); it++)
+		insert_config(std::make_pair(it->first, it->second));
+	return (*this);
 }
 
 ServerConfigParser::~ServerConfigParser()
 {
 #ifdef PRINT_MSG
-	cout << "ServerConfigParser Destructor Called" << endl;
+	cout << RED "ServerConfigParser Destructor Called" RESET << endl;
 #endif // !PRINT_MSG
+	for (ServerConfigParser::cit_t it = _config.begin(); it != _config.end(); it++)
+		delete(it->second);
+	_config.clear();
 }
 
 /*
@@ -141,7 +165,6 @@ void ServerConfigParser::parse_config(void)
 			//cout << "===============" << endl;
 			//cout << config;
 			//cout << "===============" << endl;
-			//cout << "here" << endl;
 			string server_block = extract_bracket_content(&config, '{', '}');
 			server_config = parse_server_block(server_block);
 			insert_config(std::make_pair(key, &server_config));
@@ -398,7 +421,7 @@ int				ServerConfigParser::count_values_in_line(const string &line) const
  * @note '*' : might need a better way to check for ; and {
  * */
 
-ServerConfig	ServerConfigParser::parse_server_block(const std::string &server_block)
+const ServerConfig	ServerConfigParser::parse_server_block(const std::string &server_block)
 {
 	string			server_block_copy = server_block;
 	ServerConfig	server_config;
@@ -411,30 +434,28 @@ ServerConfig	ServerConfigParser::parse_server_block(const std::string &server_bl
 		if (line_length == server_block_copy.npos)
 			break;
 		string line = server_block_copy.substr(0, line_length);
-
+	
 		string	key = extract_key(line);
 		size_t	key_is_valid = is_valid_server_normal_directive(key);
 		if (key_is_valid == 1 || key_is_valid == 2) //Server Normal Directive Config
 		{
 			ServerNormalDirectiveConfig	normal_directive = parse_server_normal_directive(line);
-
+	
 			server_block_copy = server_block_copy.substr(server_block_copy.find_first_of(";") + 1);
 			server_config.insert_config(std::make_pair(key, &normal_directive));
 		}
 		else if (key_is_valid == 3) //Server Location Directive Config
 		{
 			ServerLocationDirectiveConfig location_directive;
-
+	
 			if (line_length == colon_distance)
-			{
-				cout << "location block not followed up by bracket" << endl;
-				exit(1);
-			}
-
+				throw ServerParserException("Location block not followed up by bracket");
+	
 			string path = extract_value(line, 1);
 			server_block_copy = server_block_copy.substr(server_block_copy.find_first_of("{") + 1);
 			string location_block = extract_bracket_content(&server_block_copy, '{', '}');
 			location_directive = parse_server_location_block(location_block);
+			location_directive.set_path(path);
 			server_config.insert_config(std::make_pair(key, &location_directive));
 		}
 		else
@@ -443,7 +464,7 @@ ServerConfig	ServerConfigParser::parse_server_block(const std::string &server_bl
 	return (server_config);
 }
 
-ServerNormalDirectiveConfig		ServerConfigParser::parse_server_normal_directive(const string &normal_directive_line)
+const ServerNormalDirectiveConfig		ServerConfigParser::parse_server_normal_directive(const string &normal_directive_line)
 {
 	ServerNormalDirectiveConfig	normal_directive;
 	string						value;
@@ -467,11 +488,7 @@ ServerNormalDirectiveConfig		ServerConfigParser::parse_server_normal_directive(c
 	else if (is_valid == 1) //Check for Normal Directives with one value
 	{
 		if (value_count != 1)
-		{
-			
 			throw ServerParserException("Some error wrong value count for key {" + key + "}");
-			exit(1);
-		}
 		value = extract_value(normal_directive_copy);
 		normal_directive.set_config(value);
 	}

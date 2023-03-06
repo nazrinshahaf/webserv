@@ -24,7 +24,7 @@ fclean:
 re: clean all
 
 leaks: re
-	$(CC) $(CFLAGS) $(MAIN) $(SRC) -o $(NAME)
+	$(CC) $(CFLAGS) $(MAIN) $(SRC) -o $(NAME) -D PRINT_MSG -D TEST_LEAKS
 	./$(NAME)
 
 test: re

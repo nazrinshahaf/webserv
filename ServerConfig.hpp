@@ -38,6 +38,8 @@ namespace webserv
 			ServerConfig(const ServerConfig &to_copy);
 			~ServerConfig();
 
+			ServerConfig &operator=(const ServerConfig &to_copy);
+
 			/*
 			 * get_base.
 			 * Returns a pointer the ServerConfig type.

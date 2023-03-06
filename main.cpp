@@ -1,8 +1,12 @@
+#include "BaseConfig.hpp"
+#include "ServerConfig.hpp"
 #include "ServerConfigParser.hpp"
 #include "Server.hpp"
 #include "Request.hpp"
+#include "ServerNormalDirectiveConfig.hpp"
 #include "colours.h"
 
+#include <cstdlib>
 #include <exception>
 #include <ios>
 #include <map>
@@ -18,6 +22,8 @@
 #include <iostream>
 #include <poll.h>
 #include <fcntl.h>
+#include <utility>
+#include <vector>
 
 using std::string;
 using std::cout;
@@ -29,14 +35,23 @@ void start_server()
 {
 	std::ifstream		conf_file("./webserv.conf");
 	ServerConfigParser	config_parser(conf_file);
-
+	
 	config_parser.parse_config();
 	config_parser.validate_config();
 
 	cout << config_parser << endl;
 
-	Server				server(config_parser);
-	server.launch();
+	//Server				server(config_parser);
+	//server.launch();
+	
+	/* ServerNormalDirectiveConfig	nd; */
+	/*  */
+	/* nd.set_config(std::make_pair("80", string())); */
+	/*  */
+	/* ServerConfig	sc; */
+	/* sc.insert_config(std::make_pair("listen", &nd)); */
+	/*  */
+	/* ServerConfig sc_copy(sc); */
 }
 
 int main(void)
@@ -62,5 +77,8 @@ int main(void)
 		cout << RED << e.what() << RESET << endl;
 		return (1);
 	}
+#ifdef TEST_LEAKS
+	system("leaks webserv");
+#endif // DEBUG
 	return (0);
 }

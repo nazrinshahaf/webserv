@@ -20,6 +20,8 @@ namespace webserv
 			ServerNormalDirectiveConfig(const ServerNormalDirectiveConfig &to_copy);
 			~ServerNormalDirectiveConfig();
 
+			ServerNormalDirectiveConfig &operator=(const ServerNormalDirectiveConfig &to_copy);
+
 			ServerNormalDirectiveConfig	*get_base(void) const;
 			ServerNormalDirectiveConfig	*get_copy(void) const;
 

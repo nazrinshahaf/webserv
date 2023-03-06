@@ -14,23 +14,39 @@ using std::endl;
 ServerConfig::ServerConfig()
 {
 #ifdef PRINT_MSG
-	cout << "ServerConfig Default Constructor called" << endl;
+	cout << GREEN "ServerConfig Default Constructor called" RESET << endl;
 #endif
 }
 
-ServerConfig::ServerConfig(const ServerConfig &to_copy) :
-	_server_config(to_copy._server_config)
+ServerConfig::ServerConfig(const ServerConfig &to_copy)
 {
 #ifdef PRINT_MSG
-	cout << "ServerConfig Copy Constructor called" << endl;
+	cout << GREEN "ServerConfig Copy Constructor called" RESET << endl;
 #endif
+	for (ServerConfig::cit_t it = to_copy._server_config.begin(); it != to_copy._server_config.end(); it++)
+		insert_config(std::make_pair(it->first, it->second));
+}
+
+ServerConfig &ServerConfig::operator=(const ServerConfig &to_copy)
+{
+#ifdef PRINT_MSG
+	cout << GREEN "ServerConfig Copy Assignment called" RESET << endl;
+#endif
+	for (ServerConfig::cit_t it = _server_config.begin(); it != _server_config.end(); it++)
+		delete(it->second);
+	for (ServerConfig::cit_t it = to_copy._server_config.begin(); it != to_copy._server_config.end(); it++)
+		insert_config(std::make_pair(it->first, it->second));
+	return (*this);
 }
 
 ServerConfig::~ServerConfig()
 {
 #ifdef PRINT_MSG
-	cout << "ServerConfig Default Destructor called" << endl;
+	cout << RED "ServerConfig Default Destructor called" RESET << endl;
 #endif
+	for (ServerConfig::cit_t it = _server_config.begin(); it != _server_config.end(); it++)
+		delete(it->second);
+	_server_config.clear();
 }
 
 ServerConfig*	ServerConfig::get_base() const
@@ -80,9 +96,8 @@ ServerConfig::find_location_directive(const string &path) const
 	for (ServerConfig::cit_t location_block = range.first; location_block != range.second; location_block++)
 	{
 		location = dynamic_cast<ServerLocationDirectiveConfig*>(range.first->second);
-		if (location->get_path() == path) {
+		if (location->get_path() == path)
 			break;
-		}
 	}
 	return (*location);
 }

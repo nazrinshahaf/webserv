@@ -3,7 +3,6 @@
 
 #include "BaseConfig.hpp"
 #include "ServerConfig.hpp"
-//#include "ServerBaseConfig.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
 #include "ServerLocationDirectiveConfig.hpp"
 
@@ -21,8 +20,6 @@
 #include <vector>
 
 using std::string;
-using std::cout;
-using std::endl;
 
 namespace webserv
 {
@@ -69,6 +66,15 @@ namespace webserv
 			 * */
 
 			ServerConfigParser(const ServerConfigParser &to_copy);
+
+			/*
+			 * ServerConfigParser Copy Assignment Operator.
+			 *
+			 * @param 'to_copy' : the other ServerConfigParser
+			 *	to be copied.
+			 * */
+
+			ServerConfigParser	&operator=(const ServerConfigParser &to_copy);
 
 			/*
 			 * ServerConfigParser Destructor.
@@ -169,7 +175,7 @@ namespace webserv
 			 *	prior to this.
 			 * */
 
-			ServerConfig					parse_server_block(const string &server_block);
+			const ServerConfig					parse_server_block(const string &server_block);
 
 			/*
 			 * parse_server_location_block.
@@ -191,7 +197,7 @@ namespace webserv
 			 *	to this.
 			 * */
 
-			ServerNormalDirectiveConfig		parse_server_normal_directive(const string &normal_directive_line);
+			const ServerNormalDirectiveConfig		parse_server_normal_directive(const string &normal_directive_line);
 
 			/*
 			 * is_valid_server_normal_directive.

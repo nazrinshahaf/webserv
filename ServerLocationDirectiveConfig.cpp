@@ -15,9 +15,13 @@ ServerLocationDirectiveConfig::ServerLocationDirectiveConfig()
 #endif
 }
 
-ServerLocationDirectiveConfig::ServerLocationDirectiveConfig(const ServerLocationDirectiveConfig &to_copy)
+ServerLocationDirectiveConfig::ServerLocationDirectiveConfig(const ServerLocationDirectiveConfig &to_copy) :
+	_location_directive_config(to_copy._location_directive_config),
+	_path(to_copy._path)
 {
-	_location_directive_config = to_copy._location_directive_config;
+#ifdef PRINT_MSG
+	cout << "ServerLocationDirectiveConfig Copy Constructor called" << endl;
+#endif
 }
 
 ServerLocationDirectiveConfig::~ServerLocationDirectiveConfig()
