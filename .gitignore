@@ -3,3 +3,4 @@ webserv
 .vscode
 *.o
 .DS_Store
+error.log

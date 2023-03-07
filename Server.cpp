@@ -91,7 +91,7 @@ void	Server::handler(ListeningSocket &server_socket)
         char buffer[_recv_buffer_size] = {0};
 		string temp;
 		
-       	valread = recv(it->first ,buffer, _recv_buffer_size - 1, 0);
+       	valread = recv(it->first, buffer, _recv_buffer_size - 1, 0); //-1 is for null terminator
 		if (valread < 0)
 		{
 			it++;
@@ -101,7 +101,7 @@ void	Server::handler(ListeningSocket &server_socket)
 		while (valread > 0)
 		{
 			temp.append(buffer, valread);
-	       	valread = recv(it->first ,buffer, _recv_buffer_size - 1, 0);
+	       	valread = recv(it->first, buffer, _recv_buffer_size - 1, 0);
 		}
 
 		Request req(temp, it->first);
@@ -220,9 +220,9 @@ void	Server::launch()
     }
     while(1)
     {
-		log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size())));
-		for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); it++)
-			log(DEBUG, (string("Client fd[") + to_string(it->first) + "] is open"));
+		/* log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size()))); */
+		/* for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); it++) */
+		/* 	log(DEBUG, (string("Client fd[") + to_string(it->first) + "] is open")); */
         // Run this only if a socket is queued (poll) OR we have open sockets that have not yet written bytes
         if (poll(fds, nfds, 1000) > 0 || _client_sockets.size() > 0)
         {

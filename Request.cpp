@@ -1,4 +1,5 @@
 #include "Request.hpp"
+#include <cstddef>
 #include <iostream>
 #include <string>
 #include <cstring>  
@@ -57,12 +58,17 @@ void Request::find_request_protocol_version() {
     while(pos != string::npos)
     {
         positions.push_back(pos);
-        pos = first_line.find(" ", pos+1);
+        pos = first_line.find(" ", pos + 1);
     }
-    if (positions.size() == 1)
-        _protocol_version = first_line.substr(positions[0], first_line.length() - positions[0]);
-    else
-        _protocol_version = first_line.substr(positions[1], first_line.length() - positions[1]);
+	for (std::vector<size_t>::iterator it = positions.begin(); it != positions.end(); it++)
+		cout << *it << endl;
+
+	if (positions.size() == 0) //if Request type is the only parameter.
+		;
+	else if (positions.size() == 1)
+		_protocol_version = first_line.substr(positions[0], first_line.length() - positions[0]);
+	else
+		_protocol_version = first_line.substr(positions[1], first_line.length() - positions[1]);
 }
 
 bool isNumber(const string &s)
@@ -204,13 +210,13 @@ Request::Request(string request_string, int socket) : _body(""), _socket(socket)
         _bad_request = true;
         return ;
 	}
-    find_request_path();
-    find_request_protocol_version();
     if (!find_request_type())
     {
         _bad_request = true;
         return ;
     }
+    find_request_path();
+    find_request_protocol_version();
     parse_headers();
     if (type() == "POST")
         process_post();
