@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <cctype>
 #include <string>
+#include <utility>
 
 using namespace webserv;
 using std::string;
@@ -50,7 +51,10 @@ Server::Server(const ServerConfigParser &config) : _config(config)
 		for (ServerConfig::cit_t sit = server_block_range.first; sit != server_block_range.second; sit++)
 		{
 			ServerNormalDirectiveConfig nd = dynamic_cast<ServerNormalDirectiveConfig&>(*(sit->second));
-			_sockets.push_back(ListeningSocket(AF_INET, SOCK_STREAM, 0, std::stoi(nd.get_value()), INADDR_ANY, 10, server_config));
+			/* int	fd = std::stoi(nd.get_value()); */
+			/* _server_sockets.push_back(ListeningSocket(AF_INET, SOCK_STREAM, 0, std::stoi(nd.get_value()), INADDR_ANY, 10, server_config)); */
+			/* _server_sockets.insert(std::make_pair(fd, ListeningSocket(AF_INET, SOCK_STREAM, 0, std::stoi(nd.get_value()), INADDR_ANY, 10, server_config))); */
+			add_socket(server_config, nd);
 			log(INFO, string("Server open at port ") + nd.get_value(), 2, server_config);
 		}
 	}
@@ -64,12 +68,15 @@ Server::~Server()
 #endif
 }
 		
-void	Server::add_socket(const int &domain, const int &service, const int &protocol, const int &port, const u_long &interface, const int &backlog)
+void	Server::add_socket(const ServerConfig &server_config, const ServerNormalDirectiveConfig &socket_config)
 {
-    _sockets.push_back(ListeningSocket(domain, service, protocol, port, interface, backlog));
+	int				port = atoi(socket_config.get_value().c_str());
+	ListeningSocket	server_socket(AF_INET, SOCK_STREAM, 0, port, INADDR_ANY, 10, server_config);
+
+	_server_sockets.insert(std::make_pair(server_socket.get_sock(), server_socket));
 }
 
-void	Server::handler(ListeningSocket &socket)
+void	Server::handler(ListeningSocket &server_socket)
 {
     long	valread;
 
@@ -102,11 +109,11 @@ void	Server::handler(ListeningSocket &socket)
 		string root_path;
 		try 
 		{
-			root_path = socket.get_config().find_normal_directive("root").get_value();
+			root_path = server_socket.get_config().find_normal_directive("root").get_value();
 		}
 		catch (std::exception &e)
 		{
-			log(WARN, string(e.what()), 2, socket.get_config());
+			log(WARN, string(e.what()), 2, server_socket.get_config());
 			root_path = "/";
 		}
 
@@ -120,15 +127,14 @@ void	Server::handler(ListeningSocket &socket)
 
 		if (req.bad_request())
 		{
-			log(DEBUG, "\x1B[31mBAD REQUEST RECEIVED: " + string("\x1B[0m"));
-		    log(INFO, "Client closed with ip : " + socket.get_client_ip(), 2, socket.get_config());
+			log(DEBUG, string(RED) + "BAD REQUEST RECEIVED: " + string(RESET));
+		    log(INFO, "Client closed with ip : " + server_socket.get_client_ip(), 2, server_socket.get_config());
             send(it->first , temp_message , strlen(temp_message), MSG_OOB);
             close(it->first);
 			log(ERROR, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
-			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, socket.get_config());
+			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, server_socket.get_config());
 			_client_sockets.erase(it++);
 		}
-
 		
 	    
         log(DEBUG, req.to_str());
@@ -170,9 +176,9 @@ void	Server::handler(ListeningSocket &socket)
 			log(DEBUG, "------ Message Sent to Client ------ ");
 			close(it->first);
 			_requests.erase(it->first);
-			log(INFO, "Client closed with ip : " + socket.get_client_ip(), 2, socket.get_config());
+			log(INFO, "Client closed with ip : " + server_socket.get_client_ip(), 2, server_socket.get_config());
 			log(ERROR, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
-			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, socket.get_config());
+			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, server_socket.get_config());
 			_client_sockets.erase(it++);
 		}
     }
@@ -202,11 +208,13 @@ void	Server::acceptor(ListeningSocket &socket)
 void	Server::launch()
 {
     struct pollfd fds[200];
-    int nfds = _sockets.size();
+    int nfds = _server_sockets.size();
     
-    for (unsigned long i = 0; i < _sockets.size(); i++)
+	int i = 0; //apparently u cant make a for loop with 2 variables if they are of different types
+    for (sockets_type::const_iterator server_socket = _server_sockets.begin();
+			server_socket != _server_sockets.end(); server_socket++, i++)
     {
-        fds[i].fd = _sockets[i].get_sock();
+        fds[i].fd = server_socket->second.get_sock();
         fds[i].events = POLLIN; // Data other than high priority data maybe read without blocking
         fcntl(fds[i].fd, F_SETFL, O_NONBLOCK); //set filestatus to non-blocking
 		log(DEBUG, (string("Server socket open with fd ") + to_string(fds[i].fd)));
@@ -219,10 +227,11 @@ void	Server::launch()
         // Run this only if a socket is queued (poll) OR we have open sockets that have not yet written bytes
         if (poll(fds, nfds, 1000) > 0 || _client_sockets.size() > 0)
         {
-			for (sockets_type::iterator it = _sockets.begin(); it != _sockets.end(); it++)
+			for (sockets_type::iterator it = _server_sockets.begin(); it != _server_sockets.end(); it++)
 			{
-				acceptor(*it);
-				handler(*it);
+				cout << "entered" << endl;
+				acceptor(it->second);
+				handler(it->second);
 			}
         }
     }

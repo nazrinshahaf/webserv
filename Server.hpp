@@ -10,6 +10,10 @@
 #include <string>
 #include <poll.h>
 #include "Request.hpp"
+#include "ServerNormalDirectiveConfig.hpp"
+
+using std::map;
+using std::string;
 
 namespace webserv 
 {
@@ -17,7 +21,8 @@ namespace webserv
 	{
 		public:
 
-			typedef std::vector<ListeningSocket>					sockets_type;
+			/* typedef std::vector<ListeningSocket>					sockets_type; */
+			typedef map<int, ListeningSocket>						sockets_type;
 
 			/*
 			 * Server Default Constructor.
@@ -67,9 +72,8 @@ namespace webserv
 			 * https://www.ibm.com/docs/en/aix/7.2?topic=protocols-socket
 			 * */
 
-			void		add_socket(const int &domain, const int &service,
-									const int &protocol, const int &port,
-									const u_long &interface, const int &backlog);
+			void		add_socket(const ServerConfig &server_config,
+							const ServerNormalDirectiveConfig &socket_config);
 			void		launch(void);
 
 			// ListeningSocket	*get_listening_socket(void) const;
@@ -82,13 +86,13 @@ namespace webserv
 				WARN,
 				ERROR
 			};
-			static const log_level			_base_log_level = INFO;
+			static const log_level	_base_log_level = DEBUG;
 
-			std::vector<ListeningSocket>	_sockets;
-    		std::map<int, std::string>    	_client_sockets;
-    		std::map<int, Request>    		_requests;
-			ServerConfigParser				_config;
-			static const int				_recv_buffer_size = 65535; //min read bytes
+			sockets_type			_server_sockets;
+    		map<int, string>		_client_sockets;
+    		map<int, Request>    	_requests;
+			ServerConfigParser		_config;
+			static const int		_recv_buffer_size = 65535; //min read bytes
 
 			void	acceptor(ListeningSocket &socket);
 			void	handler(ListeningSocket &socket);
