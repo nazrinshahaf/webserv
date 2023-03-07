@@ -81,11 +81,11 @@ void	Server::handler(ListeningSocket &socket)
 
     for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); )
     {
-        char buffer[65535] = {0};
+        char buffer[_recv_buffer_size] = {0};
 		string temp;
 		
 	
-       	valread = recv(it->first ,buffer, 100 - 1, 0);
+       	valread = recv(it->first ,buffer, _recv_buffer_size - 1, 0);
 		if (valread < 0)
 		{
 			it++;
@@ -95,7 +95,7 @@ void	Server::handler(ListeningSocket &socket)
 		while (valread > 0)
 		{
 			temp.append(buffer, valread);
-	       	valread = recv(it->first ,buffer, 100 - 1, 0);
+	       	valread = recv(it->first ,buffer, _recv_buffer_size - 1, 0);
 		}
 
 		Request req(temp, it->first);

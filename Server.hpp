@@ -88,6 +88,7 @@ namespace webserv
     		std::map<int, std::string>    	_client_sockets;
     		std::map<int, Request>    		_requests;
 			ServerConfigParser				_config;
+			static const int				_recv_buffer_size = 65535; //min read bytes
 
 			void	acceptor(ListeningSocket &socket);
 			void	handler(ListeningSocket &socket);
