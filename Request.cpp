@@ -60,8 +60,6 @@ void Request::find_request_protocol_version() {
         positions.push_back(pos);
         pos = first_line.find(" ", pos + 1);
     }
-	for (std::vector<size_t>::iterator it = positions.begin(); it != positions.end(); it++)
-		cout << *it << endl;
 
 	if (positions.size() == 0) //if Request type is the only parameter.
 		;
@@ -238,12 +236,10 @@ const string    Request::to_str() const
     string ret;
 
     ret = string(CYAN) + "REQUEST TYPE: " + string(RESET) + string(YELLOW) + type() + string(RESET) + "\n"\
-    + string(CYAN) + "REQUEST PATH: " + string(RESET) + string(YELLOW) + path() + string(RESET) + "\n"\
-    + string(CYAN) + "REQUEST PROTOCOL VERSION: " + string(RESET) + string(YELLOW) + protocol_version() + string(RESET) + "\n";
+		  + string(CYAN) + "REQUEST PATH: " + string(RESET) + string(YELLOW) + path() + string(RESET) + "\n"\
+		  + string(CYAN) + "REQUEST PROTOCOL VERSION: " + string(RESET) + string(YELLOW) + protocol_version() + string(RESET) + "\n";
     for (std::map<string, string>::const_iterator it = headers().begin(); it != headers().end(); it++)
-    {
         ret += string(CYAN) + it->first + ": " + string(RESET) + string(YELLOW) + it->second + string(RESET) + "\n";
-    }
     return (ret);
 }
 
@@ -268,9 +264,7 @@ std::ostream &operator<<(std::ostream &os, const webserv::Request &request)
     os << CYAN << "REQUEST PATH: " << RESET << YELLOW << request.path() << RESET << std::endl;
     os << CYAN << "REQUEST PROTOCOL VERSION: " << RESET << YELLOW << request.protocol_version() << RESET << std::endl;
     for (std::map<string, string>::const_iterator it = request.headers().begin(); it != request.headers().end(); it++)
-    {
         os << CYAN << it->first << ": " << RESET << YELLOW << it->second << RESET << std::endl;
-    }
     return (os);
 }
 
