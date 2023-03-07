@@ -121,7 +121,8 @@ void	Server::handler(ListeningSocket &server_socket)
 		else //if this request is already being processed
 		{
 			req = _requests[it->first];
-			req.add_body(temp);
+			if (temp.length() != 0)
+				req.add_body(temp);
 		}
 
 		if (req.bad_request())
@@ -162,16 +163,29 @@ void	Server::handler(ListeningSocket &server_socket)
 		char read_buffer[65535]; // create a read_buffer
 		while (myfile.read(read_buffer, sizeof(read_buffer)))
 			entireText.append(read_buffer, myfile.gcount());
-        	// send(it->first, read_buffer, myfile.gcount(), 0);
-        while (std::getline(myfile, line))
-            entireText += line;
 		entireText.append(read_buffer, myfile.gcount());
         myfile.close();
 		if (req.done())
 		{
 			if (req.path() == "/upload.html")
 				req.process_image();
-			send(it->first , entireText.c_str() , entireText.length(), 0);
+			int	total_to_send = entireText.length();
+			cout << "total to send :" << total_to_send << endl;
+			for (ssize_t total_sent = 0; total_sent < total_to_send;)
+			{
+				size_t len = (entireText.length() > 50000 ? 50000 : entireText.length());
+				string temp = entireText.substr(0,len);
+				int sent = send(it->first , temp.c_str() , len, 0);
+				if (sent == -1)
+				{
+					cout << "errno :" << errno << endl;
+					break;
+				}
+				entireText = entireText.substr(len);
+				total_sent += sent;
+				cout << "length sent :" << sent << endl;
+				cout << "total sent :" << total_sent << endl;
+			}
 			log(DEBUG, "------ Message Sent to Client ------ ");
 			close(it->first);
 			_requests.erase(it->first);
