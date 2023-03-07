@@ -199,7 +199,7 @@ Request::Request(string request_string, int socket) : _body(""), _socket(socket)
             break;
         }
     }
-    if (_header_lines.size() < 1 || _header_lines[0].size() <= 1)
+    if (_header_lines.size() < 1 || _header_lines[0].size() <= 2)
 	{
         _bad_request = true;
         return ;

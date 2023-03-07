@@ -91,7 +91,6 @@ void	Server::handler(ListeningSocket &server_socket)
         char buffer[_recv_buffer_size] = {0};
 		string temp;
 		
-	
        	valread = recv(it->first ,buffer, _recv_buffer_size - 1, 0);
 		if (valread < 0)
 		{
@@ -229,7 +228,6 @@ void	Server::launch()
         {
 			for (sockets_type::iterator it = _server_sockets.begin(); it != _server_sockets.end(); it++)
 			{
-				cout << "entered" << endl;
 				acceptor(it->second);
 				handler(it->second);
 			}
