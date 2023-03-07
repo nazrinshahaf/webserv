@@ -45,7 +45,7 @@ namespace webserv
 			 * https://www.ibm.com/docs/en/aix/7.2?topic=protocols-socket
 			 * */
 
-			Server(const ServerConfigParser &config);
+			Server(const ServerConfigParser &config, char **envp);
 			~Server();
 
 			/*
@@ -92,6 +92,7 @@ namespace webserv
     		map<int, string>		_client_sockets;
     		map<int, Request>    	_requests;
 			ServerConfigParser		_config;
+			char					**_envp;
 			static const int		_recv_buffer_size = 65535; //min read bytes
 
 			void	acceptor(ListeningSocket &socket);

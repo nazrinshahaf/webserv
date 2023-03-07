@@ -31,7 +31,7 @@ using std::endl;
 
 using namespace webserv;
 
-void start_server()
+void start_server(char **envp)
 {
 	std::ifstream		conf_file("./webserv.conf");
 	ServerConfigParser	config_parser(conf_file);
@@ -41,7 +41,7 @@ void start_server()
 
 	cout << config_parser << endl;
 
-	Server				server(config_parser);
+	Server				server(config_parser, envp);
 	server.launch();
 	
 	/* ServerNormalDirectiveConfig	nd; */
@@ -54,8 +54,10 @@ void start_server()
 	/* ServerConfig sc_copy(sc); */
 }
 
-int main(void)
+int main(int argc, char **argv, char **envp)
 {
+	(void)argc;
+	(void)argv;
     // string d_conf_file;
 
     // if (argc < 2)
@@ -70,7 +72,7 @@ int main(void)
 	
 	try
 	{
-		start_server();
+		start_server(envp);
 	}
 	catch (std::exception &e)
 	{

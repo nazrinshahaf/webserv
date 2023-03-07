@@ -8,11 +8,13 @@
 #include "colours.h"
 
 #include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <iomanip>
 #include <iostream>
 #include <fstream>
+#include <malloc/_malloc.h>
 #include <netinet/in.h>
 #include <ostream>
 #include <poll.h>
@@ -21,6 +23,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <map>
 #include <fstream>
@@ -28,6 +31,7 @@
 #include <cctype>
 #include <string>
 #include <utility>
+#include <vector>
 
 using namespace webserv;
 using std::string;
@@ -35,7 +39,8 @@ using std::cout;
 using std::endl;
 using std::to_string;
 
-Server::Server(const ServerConfigParser &config) : _config(config)
+Server::Server(const ServerConfigParser &config, char **envp) : _config(config),
+	_envp(envp)
 {
 #ifdef PRINT_MSG
 	cout << GREEN "Server Assignment Constructor Called" RESET << endl;
@@ -84,6 +89,7 @@ void	Server::handler(ListeningSocket &server_socket)
 	const char *header = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n"; // Dynamically add content length TODO
 	const char *header2 = "HTTP/1.1 200 OK\nContent-Type: image/*\r\n\r\n";
 	const char *header_404 = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
+	const char *header_cgi= "HTTP/1.1 200 OK\nContent-Type: text/html\n\n";
     // const char *err_msg = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n<!DOCTYPE html><html><body><h1>404 Not Found</h1></body></html>";
 
     for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); )
@@ -142,16 +148,64 @@ void	Server::handler(ListeningSocket &server_socket)
         string line;
 		// Defaults to index.html
 		// TODO: implement in responder
-        if (req.path() == "/")
-            myfile.open(root_path + "/index.html", std::ios::binary);
-        else
-            myfile.open(root_path + req.path(), std::ios::binary);
+		if (req.path() == "/")
+			myfile.open(root_path + "/index.html", std::ios::binary);
+		else if (req.path() == "/cgi")
+		{
+			cout << "ENTERED CGI PATH" << endl;
+			entireText = "";
+			int		fd[2];
+			char	execve_buffer[100000];
+			pipe(fd);
+			pid_t i = fork();
+			if (i == 0) //child
+			{
+				std::vector<std::string>  s;
+				s.push_back("/Library/Frameworks/Python.framework/Versions/3.10/bin/python3");
+				s.push_back("test.py");
+
+				std::vector<char*> commands;
+				for (size_t i = 0; i < s.size(); i++)
+					commands.push_back(const_cast<char*>(s[i].c_str()));
+				commands.push_back(nullptr);
+
+				dprintf(2, "in child\n");
+				dup2(fd[1], STDOUT_FILENO);
+				close(fd[0]);
+				close(fd[1]);
+				execve("/Library/Frameworks/Python.framework/Versions/3.10/bin/python3", commands.data(), _envp);
+				exit(1);
+			}
+			else if (i > 0) //parent
+			{
+				dprintf(2, "parent waiting\n");
+				waitpid(i, NULL, 0);
+				dprintf(2, "parent done waiting\n");
+				int test = read(fd[0], execve_buffer, 99999);
+				close(fd[0]);
+				close(fd[1]);
+				dprintf(2, "read count = [%d]\n", test);
+				dprintf(2, "execve buffer = [%s]\n", execve_buffer);
+				entireText = header_cgi;
+				entireText += execve_buffer;
+				cout << "[" << entireText << "]" << endl;
+			}
+			else
+			{
+				perror("fork failed");
+				_exit(3);
+			}
+		}
+		else
+			myfile.open(root_path + req.path(), std::ios::binary);
+
 		if (!myfile)
 		{
+			cout << "no myfile" << endl;
 			entireText += header_404;
 			myfile.open("public/404.html", std::ios::binary);
 		}
-		else
+		else if (req.path() != "/cgi") //remove this later
 		{
 			if (req.path() == "/edlim.jpg" || req.path() == "/edlim_lrg.jpg" || req.path() == "/jng.png")
 				entireText += header2;
@@ -160,13 +214,16 @@ void	Server::handler(ListeningSocket &server_socket)
 		}
 
 		char read_buffer[65535]; // create a read_buffer
-		while (myfile.read(read_buffer, sizeof(read_buffer)))
+		if (req.path() != "/cgi")
+		{
+			while (myfile.read(read_buffer, sizeof(read_buffer)))
+				entireText.append(read_buffer, myfile.gcount());
+			// send(it->first, read_buffer, myfile.gcount(), 0);
+			while (std::getline(myfile, line))
+				entireText += line;
 			entireText.append(read_buffer, myfile.gcount());
-        	// send(it->first, read_buffer, myfile.gcount(), 0);
-        while (std::getline(myfile, line))
-            entireText += line;
-		entireText.append(read_buffer, myfile.gcount());
-        myfile.close();
+			myfile.close();
+		}
 		if (req.done())
 		{
 			if (req.path() == "/upload.html")
