@@ -18,17 +18,21 @@ namespace webserv
     class Response
     {
     private:
-        Request _req;
-        string _root_path;
+        Request							_req;
+        string							_root_path;
         std::map<int, string>::iterator _it;
+        string							_entireText;
+        bool							_hasText;
 
+        void	readFile(void);
 		string	handle_auto_index(const string &path);
-
     public:
         Response();
         Response(const Request &req, const string &root_path, std::map<int, string>::iterator &it);
+        ~Response();
 
-        void			respond(void);
+        void respond(void);
+        bool hasText(void);
     };
 }
 

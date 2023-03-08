@@ -90,7 +90,7 @@ void	Server::handler(ListeningSocket &server_socket)
 		string temp;
 		
        	valread = recv(it->first, buffer, _recv_buffer_size, 0);
-		if (valread < 0)
+		if (valread < 0 && _responses[it->first].hasText() == false)
 		{
 			it++;
 			continue;
@@ -137,16 +137,28 @@ void	Server::handler(ListeningSocket &server_socket)
 	    
         log(DEBUG, req.to_str());
 		// Defaults to index.html
-		Response responder(req, root_path, it);
-
-        log(DEBUG, "------ Message Sent to Client ------ ");
-        close(it->first);
-        _requests.erase(it->first);
-        log(INFO, "Client closed with ip : " + server_socket.get_client_ip(), 2, server_socket.get_config());
-        log(ERROR, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
-        log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, server_socket.get_config());
-        _client_sockets.erase(it++);
+		if (_responses.find(it->first) == _responses.end()) // if this request is newd
+		{
+			Response responder(req, root_path, it);
+			_responses[it->first] = responder;
+		}
+		_responses[it->first].respond();
+		if (_responses[it->first].hasText() == false)
+		{
+			cout << "For loop has ended bro\n";
+			_responses.erase(it->first);
+			log(DEBUG, "------ Message Sent to Client ------ ");
+			close(it->first);
+			_requests.erase(it->first);
+			log(INFO, "Client closed with ip : " + server_socket.get_client_ip(), 2, server_socket.get_config());
+			log(ERROR, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
+			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, server_socket.get_config());
+			_client_sockets.erase(it++);
+		}
+		// else
+		// 	it++;
     }
+	//TODO: close the fd incase poll cannot read the already open client, i.e client is closed
 }
 
 /*
