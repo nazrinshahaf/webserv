@@ -20,12 +20,16 @@ namespace webserv
         Request _req;
         string _root_path;
         std::map<int, string>::iterator _it;
-
+        string _entireText;
+        bool    _hasText;
+        void readFile(void);
     public:
         Response();
         Response(const Request &req, const string &root_path, std::map<int, string>::iterator &it);
+        ~Response();
 
         void respond(void);
+        bool hasText(void);
     };
 }
 

@@ -3,14 +3,16 @@
 
 #include "ListeningSocket.hpp"
 #include "ServerConfig.hpp"
+#include "Request.hpp"
+#include "Response.hpp"
+#include "ServerNormalDirectiveConfig.hpp"
 #include "ServerConfigParser.hpp"
 
 #include <vector>
 #include <map>
 #include <string>
 #include <poll.h>
-#include "Request.hpp"
-#include "ServerNormalDirectiveConfig.hpp"
+
 
 using std::map;
 using std::string;
@@ -91,6 +93,7 @@ namespace webserv
 			sockets_type			_server_sockets;
     		map<int, string>		_client_sockets;
     		map<int, Request>    	_requests;
+    		map<int, Response>    	_responses;
 			ServerConfigParser		_config;
 			static const int		_recv_buffer_size = 65535; //min read bytes
 
