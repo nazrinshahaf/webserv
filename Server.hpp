@@ -7,6 +7,7 @@
 #include "Response.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
 #include "ServerConfigParser.hpp"
+#include "Log.hpp"
 
 #include <vector>
 #include <map>
@@ -81,14 +82,14 @@ namespace webserv
 			// ListeningSocket	*get_listening_socket(void) const;
 
 		private:
-			enum	log_level
-			{
-				DEBUG,
-				INFO,
-				WARN,
-				ERROR
-			};
-			static const log_level	_base_log_level = DEBUG;
+			/* enum	log_level */
+			/* { */
+			/* 	DEBUG, */
+			/* 	INFO, */
+			/* 	WARN, */
+			/* 	ERROR */
+			/* }; */
+			/* static const log_level	_base_log_level = DEBUG; */
 
 			sockets_type			_server_sockets;
     		map<int, string>		_client_sockets;
@@ -100,14 +101,14 @@ namespace webserv
 			void	acceptor(ListeningSocket &socket);
 			void	handler(ListeningSocket &socket);
 			void	responder(void);
-
-			void	log(const log_level &level, const string &log_msg,
-							const int &log_to_file = 0,
-							ServerConfig const &server = ServerConfig()) const;
-			void	print_debug_level(const log_level &level, const int &log_to_file, std::fstream &log_file,
-						const log_level &file_log_level) const;
-			void	print_debug_msg(const log_level &level, const int &log_to_file, std::fstream &log_file,
-						const log_level &file_log_level,const string &log_msg) const;
+			/*  */
+			/* void	log(const log_level &level, const string &log_msg, */
+			/* 				const int &log_to_file = 0, */
+			/* 				ServerConfig const &server = ServerConfig()) const; */
+			/* void	print_debug_level(const log_level &level, const int &log_to_file, std::fstream &log_file, */
+			/* 			const log_level &file_log_level) const; */
+			/* void	print_debug_msg(const log_level &level, const int &log_to_file, std::fstream &log_file, */
+			/* 			const log_level &file_log_level,const string &log_msg) const; */
 
 	};
 }
