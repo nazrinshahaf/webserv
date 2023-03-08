@@ -1,6 +1,7 @@
 #include "Server.hpp"
 #include "ListeningSocket.hpp"
 #include "Request.hpp"
+#include "Response.hpp"
 #include "ServerConfig.hpp"
 #include "ServerLocationDirectiveConfig.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
@@ -81,9 +82,6 @@ void	Server::handler(ListeningSocket &server_socket)
     long	valread;
 
 	const char *temp_message = "HTTP/1.1 500 FUCK OFF\r\nContent-Type: text/html\r\nContent-Length: 119\r\n\r\n";
-	const char *header = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n"; // Dynamically add content length TODO
-	const char *header2 = "HTTP/1.1 200 OK\nContent-Type: image/*\r\n\r\n";
-	const char *header_404 = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
     // const char *err_msg = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n<!DOCTYPE html><html><body><h1>404 Not Found</h1></body></html>";
 
     for (std::map<int, string>::iterator it = _client_sockets.begin(); it != _client_sockets.end(); )
@@ -138,62 +136,16 @@ void	Server::handler(ListeningSocket &server_socket)
 		
 	    
         log(DEBUG, req.to_str());
-        std::ifstream myfile;
-        string entireText;
-        string line;
 		// Defaults to index.html
-		// TODO: implement in responder
-        if (req.path() == "/")
-            myfile.open(root_path + "/index.html", std::ios::binary);
-        else
-            myfile.open(root_path + req.path(), std::ios::binary);
-		if (!myfile)
-		{
-			entireText += header_404;
-			myfile.open("public/404.html", std::ios::binary);
-		}
-		else
-		{
-			if (req.path() == "/edlim.jpg" || req.path() == "/edlim_lrg.jpg" || req.path() == "/jng.png")
-				entireText += header2;
-			else
-				entireText += header;
-		}
+		Response responder(req, root_path, it);
 
-		char read_buffer[65535]; // create a read_buffer
-		while (myfile.read(read_buffer, sizeof(read_buffer)))
-			entireText.append(read_buffer, myfile.gcount());
-		entireText.append(read_buffer, myfile.gcount());
-        myfile.close();
-		if (req.done())
-		{
-			if (req.path() == "/upload.html")
-				req.process_image();
-			int	total_to_send = entireText.length();
-			cout << "total to send :" << total_to_send << endl;
-			for (ssize_t total_sent = 0; total_sent < total_to_send;)
-			{
-				size_t len = (entireText.length() > 50000 ? 50000 : entireText.length());
-				string temp = entireText.substr(0,len);
-				int sent = send(it->first , temp.c_str() , len, 0);
-				if (sent == -1)
-				{
-					cout << "errno :" << errno << endl;
-					break;
-				}
-				entireText = entireText.substr(len);
-				total_sent += sent;
-				cout << "length sent :" << sent << endl;
-				cout << "total sent :" << total_sent << endl;
-			}
-			log(DEBUG, "------ Message Sent to Client ------ ");
-			close(it->first);
-			_requests.erase(it->first);
-			log(INFO, "Client closed with ip : " + server_socket.get_client_ip(), 2, server_socket.get_config());
-			log(ERROR, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
-			log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, server_socket.get_config());
-			_client_sockets.erase(it++);
-		}
+        log(DEBUG, "------ Message Sent to Client ------ ");
+        close(it->first);
+        _requests.erase(it->first);
+        log(INFO, "Client closed with ip : " + server_socket.get_client_ip(), 2, server_socket.get_config());
+        log(ERROR, "Client ip is techincally wrong cause were changing it everything this might be an issue if we need to read socket address somwhere");
+        log(DEBUG, (string("Client socket closed with fd ") + to_string(it->first)), 2, server_socket.get_config());
+        _client_sockets.erase(it++);
     }
 }
 
