@@ -45,21 +45,12 @@ void Response::readFile(void)
     }
 
     char read_buffer[65535]; // create a read_buffer
-    // string test;
-    // while (getline(myfile, test))
-        // _entireText += test;
     while (myfile.read(read_buffer, sizeof(read_buffer)))
         _entireText.append(read_buffer, myfile.gcount());
-    // cout << _entireText << endl;
-    // cout << "========" << endl;
     _entireText.append(read_buffer, myfile.gcount());
-    // cout << "========" << endl;
-    // cout << _entireText << endl;
-    // cout << _entireText.length();
     myfile.close();
-    // exit(0);
-    // if (_req.path().find(".jpg") != string::npos || _req.path().find(".png") != string::npos)
-    //     exit(0);
+    cout << "WHOLE STRING IS: " << _entireText.length() << endl;
+    cout << "BODY IS: " << _entireText.length() - strlen(header2) << endl;
 }
 
 void Response::respond(void)
@@ -69,13 +60,13 @@ void Response::respond(void)
     {
         if (_req.path() == "/upload.html")
             _req.process_image();
-        int total_to_send = _entireText.length();
+        size_t total_to_send = _entireText.length();
         // cout << "total to send :" << total_to_send << endl;
-        for (ssize_t total_sent = 0; total_sent < total_to_send;)
+        for (size_t total_sent = 0; total_sent < total_to_send;)
         {
             size_t len = (_entireText.length() > 100000 ? 100000 : _entireText.length());
             string to_send = _entireText.substr(0, len);
-            int sent = send(_it->first, to_send.c_str(), len, 0);
+            ssize_t sent = send(_it->first, to_send.c_str(), len, 0);
             if (sent == -1)
             {
                 std::cout << "total sent bytes: " << total_sent << endl;
@@ -85,7 +76,7 @@ void Response::respond(void)
             }
             _entireText = _entireText.substr(len);
             total_sent += sent;
-            // std::cout << "total sent bytes: " << total_sent << endl;
+            std::cout << "total sent bytes: " << total_sent << endl;
             // std::cout << "total To send: " << total_to_send << endl;
             if (total_sent == total_to_send)
                 _hasText = false;
