@@ -196,7 +196,6 @@ static string			auto_index_create_file(const string &path, const int &file_type,
 	string	file_str;
 	string	full_path = path + "/" + file_name;
 
-	cout << file_name << endl;
 	if (file_type == 1) //everything else (mainly file)
 	{
 		file_str += "<tr>";
@@ -241,6 +240,5 @@ std::string	Response::handle_auto_index(const string &path)
 		auto_index_html += auto_index_create_file(path, it->first, it->second);
 	}
 	auto_index_html += auto_index_create_html(1);
-	cout << auto_index_html << endl;
 	return (auto_index_html);
 }
