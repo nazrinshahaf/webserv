@@ -4,3 +4,4 @@ webserv
 *.o
 .DS_Store
 error.log
+webserv.dSYM

@@ -88,9 +88,11 @@ namespace webserv
 			ServerConfigParser		_config;
 			static const int		_recv_buffer_size = 65535; //min read bytes
 
-			void	acceptor(ListeningSocket &socket);
-			void	handler(ListeningSocket &socket);
-			void	responder(void);
+			int		acceptor(ListeningSocket &socket);
+			/* int		handler(ListeningSocket &socket); */
+
+			int		receiver(const ListeningSocket &server, const int &const_fd);
+			int		responder(const ListeningSocket &server, int client_fd);
 	};
 }
 

@@ -1,7 +1,7 @@
 NAME = webserv
 CC = c++
 CFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic
-SANITIZE = -fsanitize=address
+SANITIZE = -fsanitize=address -g
 RM = rm -f
 
 SRC = ServerConfig.cpp ServerConfigParser.cpp ServerLocationDirectiveConfig.cpp \

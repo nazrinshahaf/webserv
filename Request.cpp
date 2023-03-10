@@ -191,6 +191,9 @@ Request::Request(string request_string, int socket) : _body(""), _socket(socket)
 #ifdef PRINT_MSG
 	cout << "Request Default Constructor called" << endl;
 #endif
+
+	/* cout << "request_string.size : " << request_string.length() << endl; */
+	/* cout << "request_string = [" << request_string << "]" << endl; */
     while (request_string.find("\n") != request_string.npos && request_string != "\r\n")
     {
         string line = request_string.substr(0, request_string.find("\n"));
