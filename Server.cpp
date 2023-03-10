@@ -455,6 +455,12 @@ void	Server::launch()
 							continue;
 						}
 					}
+					else if (poll_fds[i].revents & POLLHUP) //handling respoonse of http request
+					{
+						Log(INFO, string("Client has closed connection"));
+						client_server_pair.erase(poll_fds[i].fd);
+						poll_fds.erase(poll_fds.begin() + i);
+					}
 				}
 			}
 		}

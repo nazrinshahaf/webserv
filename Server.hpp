@@ -90,7 +90,6 @@ namespace webserv
 
 			int		acceptor(ListeningSocket &socket);
 			/* int		handler(ListeningSocket &socket); */
-
 			int		receiver(const ListeningSocket &server, const int &const_fd);
 			int		responder(const ListeningSocket &server, int client_fd);
 	};
