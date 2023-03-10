@@ -1,14 +1,21 @@
 #include "Response.hpp"
+#include "Log.hpp"
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <string>
+#include <sys/_types/_size_t.h>
+#include <sys/_types/_ssize_t.h>
 #include <sys/dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/errno.h>
+#include <sys/socket.h>
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <signal.h>
+#include <sstream>
 
 #define _XOPEN_SOURCE 700 //for autoindex
 #define _GNU_SOURCE //for checking audoindex file type
@@ -23,7 +30,8 @@ Response::Response()
     _hasText = false;
 }
 
-Response::Response(const Request &req, const string &root_path, std::map<int, string>::iterator &it) : _req(req), _root_path(root_path), _it(it), _hasText(true)
+Response::Response(const Request &req, const string &root_path, std::map<int, string>::iterator &it) : 
+	_req(req), _root_path(root_path), _it(it), _hasText(true)
 {
     this->readFile();
 }
@@ -38,10 +46,12 @@ bool Response::hasText(void) { return (_hasText); }
 void Response::readFile(void)
 {
     const char *header = "HTTP/1.1 200 OK\nContent-Type: */*\n\n"; // Dynamically add content length TODO
-    const char *header2 = "HTTP/1.1 200 OK\nContent-Type: image/*\r\n\r\n";
+    const char *header2 = "HTTP/1.1 200 OK\r\nContent-Type: image/*\r\n\r\n";
     const char *header_404 = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
 
     std::ifstream myfile;
+
+	string	header_and_text;
 
 	if (_req.path() == "/")
 	{
@@ -63,16 +73,30 @@ void Response::readFile(void)
     else
     {
         if (_req.path().find(".jpg") != string::npos || _req.path().find(".png") != string::npos)
+		{
             _entireText += header2;
+			/* header_and_text = header2; */
+			/* header_and_text += "Transfer-Encoding: chunked\r\n\r\n"; */
+		}
         else
             _entireText += header;
     }
 
+	/* cout << "before read buffer" << endl; */
     char read_buffer[65535]; // create a read_buffer
     while (myfile.read(read_buffer, sizeof(read_buffer)))
         _entireText.append(read_buffer, myfile.gcount());
     _entireText.append(read_buffer, myfile.gcount());
+	///* if (_req.path().find(".jpg") != string::npos || _req.path().find(".png") != string::npos) */
+	///* { */
+	///* 	/* header_and_text += "Content-Length: "; */
+	///* 	/* header_and_text += _entireText.length(); */
+	///* 	cout << header_and_text << endl; */
+	///* 	_entireText = header_and_text + _entireText; */
+	///* } */
+	///* cout << "before close" << endl; */
     myfile.close();
+	/* cout << "after close" << endl; */
     cout << "WHOLE STRING IS: " << _entireText.length() << endl;
     cout << "BODY IS: " << _entireText.length() - strlen(header2) << endl;
 }
@@ -84,29 +108,72 @@ void Response::respond(void)
     {
         if (_req.path() == "/upload.html")
             _req.process_image();
-        size_t total_to_send = _entireText.length();
-        // cout << "total to send :" << total_to_send << endl;
-        for (size_t total_sent = 0; total_sent < total_to_send;)
-        {
-            size_t len = (_entireText.length() > 100000 ? 100000 : _entireText.length());
-            string to_send = _entireText.substr(0, len);
-            ssize_t sent = send(_it->first, to_send.c_str(), len, 0);
-            if (sent == -1)
-            {
-                std::cout << "total sent bytes: " << total_sent << endl;
-                std::cout << "total To send: " << total_to_send << endl;
-                cout << "errno :" << errno << endl;
-                break;
-            }
-            _entireText = _entireText.substr(len);
-            total_sent += sent;
-            std::cout << "total sent bytes: " << total_sent << endl;
-            // std::cout << "total To send: " << total_to_send << endl;
-            if (total_sent == total_to_send)
-                _hasText = false;
-            // cout << "length sent :" << sent << endl;
-            // cout << "total sent :" << total_sent << endl;
-        }
+        ssize_t total_to_send = _entireText.length();
+
+		/* ssize_t len = (_entireText.length() > 100000 ? 100000 : _entireText.length()); */
+		/*  */
+		/* std::stringstream stream; */
+		/* stream << std::hex << len; */
+		/* string to_send(stream.str()); */
+		/*  */
+		/* to_send += "\r\n" + _entireText.substr(len) + "\r\n"; */
+		/*  */
+		/* if (len == (ssize_t)_entireText.length()) */
+		/* 	to_send += "0\r\n\r\n"; */
+		/* ssize_t sent = send(_it->first, to_send.c_str(), len, 0); */
+		/* if (sent == -1 || sent == 0) */
+		/* { */
+		/* 	if (sent == 0) */
+		/* 		throw ResponseException("SENT IS 0"); */
+		/* 	return ; */
+		/* } */
+		/* cout << "sent :" << sent << endl; */
+		/* cout << _entireText.length() << endl; */
+		/* if (sent != total_to_send) */
+		/* 	_entireText.substr(sent); */
+		/* else */
+		/* 	_hasText = false; */
+
+		cout << "total to send :" << total_to_send << endl;
+		cout << "outside send" << endl;
+		ssize_t	total_sent = 0;
+		for (total_sent = 0; total_sent < total_to_send; )
+		{
+			ssize_t len = (_entireText.length() > 100000 ? 100000 : _entireText.length());
+			string to_send = _entireText.substr(0, len);
+			signal(SIGPIPE, SIG_IGN);
+			ssize_t sent = send(_it->first, to_send.c_str(), len, 0);
+			cout << "sent : " << sent << endl;
+			cout << "len :" << len << endl;
+			if (sent != len)
+			{
+				_entireText.substr(sent);
+				cout << "total sent :" << total_sent << endl;
+				return;
+			}
+			if (sent == 0)
+				throw ResponseException("SENT = 0");
+			if (sent == -1)
+			{
+				/* cout << "in" << endl; */
+				/* std::cout << "total sent bytes: " << total_sent << endl; */
+				/* std::cout << "total To send: " << total_to_send << endl; */
+				/* if (errno == EPIPE) */
+				/* std::cerr << "EPIPE" << endl; */
+				/* std::cerr << "errno :" << "ERGAIN" << errno << endl; */
+				cout << "total sent :" << total_sent << endl;
+				break;
+			}
+			_entireText = _entireText.substr(len);
+			total_sent += sent;
+			/* std::cout << "total sent bytes: " << total_sent << endl; */
+			// std::cout << "total To send: " << total_to_send << endl;
+			if (total_sent == total_to_send)
+				_hasText = false;
+			// cout << "length sent :" << sent << endl;
+			/* cout << "total sent :" << total_sent << endl; */
+		}
+		cout << "total sent :" << total_sent << endl;
     }
 }
 

@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <exception>
 
 using std::string;
 
@@ -33,6 +34,20 @@ namespace webserv
 
         void respond(void);
         bool hasText(void);
+
+		class   ResponseException : public std::exception
+		{
+			public:
+				ResponseException(string err_msg) : _err_msg(err_msg) {};
+				~ResponseException() _NOEXCEPT {};
+
+				virtual const char  *what(void) const throw() {
+					return (_err_msg.c_str());
+				};
+
+			private:
+				string  _err_msg;
+		};
     };
 }
 

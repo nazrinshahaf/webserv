@@ -12,6 +12,7 @@
 #include <ostream>
 #include <string>
 #include <sys/_types/_size_t.h>
+#include <unistd.h>
 #include <utility>
 #include <vector>
 
@@ -63,6 +64,7 @@ ServerConfigParser::ServerConfigParser(std::ifstream &config_file)
 		ss << config_file.rdbuf();
 		_config_str = ss.str();
 	}
+	config_file.close();
 	initialize_valid_directives(valid_base_directives_array,
 			&_valid_base_directives,
 			sizeof(valid_base_directives_array) / sizeof(valid_base_directives_array[0]));
