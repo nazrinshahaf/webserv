@@ -142,7 +142,31 @@ void	Server::handler(ListeningSocket &server_socket)
 			Response responder(req, root_path, it);
 			_responses[it->first] = responder;
 		}
-		_responses[it->first].respond();
+		if (_responses[it->first].blocked())
+		{//use select here to see if socket can respond already, maybe check if onnection has been closed to not check errno for pipe issue also.
+			fd_set wfds;
+        	struct timeval timeout;
+        	FD_ZERO(&wfds);
+        	FD_SET(it->first, &wfds);
+        	timeout.tv_sec = 0;
+        	timeout.tv_usec = 1000000; //no us
+        	int sel_value = select(it->first+1, NULL, &wfds, NULL, &timeout);
+			if (FD_ISSET(it->first, &wfds) != 0)
+        	    log(ERROR, "Socket IS ready for writing");
+        	else {
+        	    log(ERROR, "Socket NO ready for writing");
+        	    continue;;
+        	}
+		}
+		else
+			_responses[it->first].respond();
+		if (errno == EPIPE) //just check for error and close everything
+		{
+			_requests.erase(it->first);
+			_responses.erase(it->first);
+			close(it->first);
+			_client_sockets.erase(it++);
+		}
 		if (_responses[it->first].hasText() == false)
 		{
 			cout << "For loop has ended bro\n";

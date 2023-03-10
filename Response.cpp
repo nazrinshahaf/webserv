@@ -7,7 +7,7 @@ Response::Response()
     _hasText = false;
 }
 
-Response::Response(const Request &req, const string &root_path, std::map<int, string>::iterator &it) : _req(req), _root_path(root_path), _it(it), _hasText(true)
+Response::Response(const Request &req, const string &root_path, std::map<int, string>::iterator &it) : _req(req), _root_path(root_path), _it(it), _hasText(true), _is_blocked(false)
 {
     this->readFile();
 }
@@ -18,6 +18,8 @@ Response::~Response()
 }
 
 bool Response::hasText(void) { return (_hasText); }
+
+bool Response::blocked(void) { return (_is_blocked); }
 
 void Response::readFile(void)
 {
@@ -66,11 +68,15 @@ void Response::respond(void)
         {
             size_t len = (_entireText.length() > 100000 ? 100000 : _entireText.length());
             string to_send = _entireText.substr(0, len);
+            signal(SIGPIPE, SIG_IGN); //just ignore defualt sigpipe handler
             ssize_t sent = send(_it->first, to_send.c_str(), len, 0);
             if (sent == -1)
             {
-                std::cout << "total sent bytes: " << total_sent << endl;
-                std::cout << "total To send: " << total_to_send << endl;
+                if (errno == EPIPE)
+                    std::cerr << "EPIPE" << endl;
+                if (errno == EAGAIN)
+                    _is_blocked = true;
+                std::cerr << "errno :" << errno << endl;
                 cout << "errno :" << errno << endl;
                 break;
             }
@@ -78,6 +84,7 @@ void Response::respond(void)
             total_sent += sent;
             std::cout << "total sent bytes: " << total_sent << endl;
             // std::cout << "total To send: " << total_to_send << endl;
+            
             if (total_sent == total_to_send)
                 _hasText = false;
             // cout << "length sent :" << sent << endl;

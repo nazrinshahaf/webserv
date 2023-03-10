@@ -14,23 +14,26 @@ using std::endl;
 
 namespace webserv
 {
-    class Response
-    {
-    private:
-        Request _req;
-        string _root_path;
-        std::map<int, string>::iterator _it;
-        string _entireText;
-        bool    _hasText;
-        void readFile(void);
-    public:
-        Response();
-        Response(const Request &req, const string &root_path, std::map<int, string>::iterator &it);
-        ~Response();
+	class Response
+	{
+	private:
+		Request							_req;
+		string							_root_path;
+		std::map<int, string>::iterator _it;
+		string							_entireText;
+		bool							_hasText;
+		bool							_is_blocked;
+		void readFile(void);
 
-        void respond(void);
-        bool hasText(void);
-    };
+	public:
+		Response();
+		Response(const Request &req, const string &root_path, std::map<int, string>::iterator &it);
+		~Response();
+
+		void respond(void);
+		bool hasText(void);
+		bool blocked(void);
+	};
 }
 
 #endif
