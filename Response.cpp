@@ -52,6 +52,7 @@ void Response::readFile(void)
     std::ifstream myfile;
 
 	string	header_and_text;
+	string	full_path = _root_path + _req.path();
 
 	if (_req.path() == "/")
 	{
@@ -63,7 +64,19 @@ void Response::readFile(void)
 		_entireText += handle_auto_index(_root_path);
 	}
 	else
-		myfile.open(_root_path + _req.path(), std::ios::binary);
+	{
+		struct stat	dir_stat;
+		if (stat(full_path.c_str(), &dir_stat) == 0) //if successfully stat
+		{
+			if (dir_stat.st_mode & S_IFDIR) //if dir
+			{
+				Log(ERROR, "FILE IS A DIRECTORY");
+				myfile.open("public/404.html", std::ios::binary);
+			}
+			else //if not dir
+				myfile.open(_root_path + _req.path(), std::ios::binary);
+		}
+	}
 
     if (!myfile)
     {
@@ -137,7 +150,7 @@ void Response::respond(void)
 static string	auto_index_apply_syle(void)
 {
 	//return (" html { min-height: 100%; text-align: center; display: flex; justify-content: center; flex-direction: column; } body { font-family: Arial, sans-serif; margin: 0; padding: 0; text-align: center; min-height: 100%; } h1 { text-align: center; } table { border: none; border-bottom: 1px solid black; border-collapse: collapse; margin: 0 auto; width: 600px; } thead { border-bottom: 1px solid black; } th, td { /* border: 1px solid black; */ padding: 10px; text-align: left; } td a { font-weight: 600; }");
-	return("<link rel=\"stylesheet\" href=\"autoindex.css\">");
+	return("<link rel=\"stylesheet\" href=\"https://drive.google.com/uc?export=view&id=1ZCGfFPqxAPPh66miEdAjFlYmeC8krMjc\">");
 }
 
 static string		auto_index_create_header(const string &path)
