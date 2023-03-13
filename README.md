@@ -2,7 +2,7 @@ Need to use epoll() but MacOS only had poll()
 
 need to implement
 1. Requirements:
-   1. status codes TODO: dynamically respond by checking the request object
+   1. status codes TODO: dynamically respond by checking the request object, look at request directory, incase its in a location block of the webserv config.
    2. delete
    3. HTTP redirections
    4.  
