@@ -3,7 +3,7 @@
 #include "ServerConfig.hpp"
 #include "ServerLocationDirectiveConfig.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
-#include "colours.h"
+#include "../colours.h"
 
 #include <algorithm>
 #include <cctype>

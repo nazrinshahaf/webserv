@@ -5,7 +5,7 @@
 #include <cstring>  
 #include <vector>
 #include <map>
-#include "colours.h"
+#include "../../colours.h"
 #include <string.h>
 #include <fstream>
 

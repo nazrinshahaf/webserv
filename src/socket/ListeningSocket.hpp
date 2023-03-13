@@ -2,7 +2,7 @@
 # define LISTENINGSOCKET_HPP
 
 #include "BindingSocket.hpp"
-#include "ServerConfig.hpp"
+#include "../config/ServerConfig.hpp"
 #include <string>
 
 /*

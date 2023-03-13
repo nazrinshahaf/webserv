@@ -1,7 +1,7 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
-#include "Request.hpp"
+#include "../request/Request.hpp"
 #include <iostream>
 #include <string>
 #include <fstream>

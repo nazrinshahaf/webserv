@@ -1,13 +1,13 @@
 #include "Server.hpp"
-#include "ListeningSocket.hpp"
-#include "Request.hpp"
-#include "Response.hpp"
-#include "ServerConfig.hpp"
-#include "ServerLocationDirectiveConfig.hpp"
-#include "ServerNormalDirectiveConfig.hpp"
-#include "ServerConfigParser.hpp"
-#include "Log.hpp"
-#include "colours.h"
+#include "../socket/Socket.hpp"
+#include "request/Request.hpp"
+#include "response/Response.hpp"
+#include "../config/ServerConfig.hpp"
+#include "../config/ServerLocationDirectiveConfig.hpp"
+#include "../config/ServerNormalDirectiveConfig.hpp"
+#include "../config/ServerConfigParser.hpp"
+#include "../log/Log.hpp"
+#include "../colours.h"
 
 #include <cstddef>
 #include <cstdlib>

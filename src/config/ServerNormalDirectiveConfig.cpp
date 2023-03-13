@@ -1,5 +1,5 @@
 #include "ServerNormalDirectiveConfig.hpp"
-#include "colours.h"
+#include "../colours.h"
 
 using namespace webserv;
 

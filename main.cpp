@@ -1,10 +1,5 @@
-#include "BaseConfig.hpp"
-#include "ServerConfig.hpp"
-#include "ServerConfigParser.hpp"
-#include "Server.hpp"
-#include "Request.hpp"
-#include "ServerNormalDirectiveConfig.hpp"
-#include "colours.h"
+#include "src/config/ServerConfigParser.hpp"
+#include "src/server/Server.hpp"
 
 #include <cstdlib>
 #include <exception>

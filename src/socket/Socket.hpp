@@ -1,8 +1,8 @@
 #ifndef SOCKET_HPP
 # define SOCKET_HPP
 
-#include "BaseConfig.hpp"
-#include "colours.h"
+#include "../config/BaseConfig.hpp"
+#include "../colours.h"
 
 #include <exception>
 #include <iostream>

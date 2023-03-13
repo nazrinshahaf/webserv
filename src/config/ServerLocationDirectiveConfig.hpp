@@ -2,7 +2,7 @@
 # define SERVERLOCATIONDIRECTIVECONFIG_HPP
 
 #include "ServerBaseConfig.hpp"
-#include "colours.h"
+#include "../colours.h"
 
 #include <string>
 #include <iostream>

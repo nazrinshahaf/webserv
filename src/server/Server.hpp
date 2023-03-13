@@ -1,13 +1,13 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
-#include "ListeningSocket.hpp"
-#include "ServerConfig.hpp"
-#include "Request.hpp"
-#include "Response.hpp"
-#include "ServerNormalDirectiveConfig.hpp"
-#include "ServerConfigParser.hpp"
-#include "Log.hpp"
+#include "../socket/ListeningSocket.hpp"
+#include "../config/ServerConfig.hpp"
+#include "request/Request.hpp"
+#include "response/Response.hpp"
+#include "../config/ServerNormalDirectiveConfig.hpp"
+#include "../config/ServerConfigParser.hpp"
+#include "../log/Log.hpp"
 
 #include <vector>
 #include <map>

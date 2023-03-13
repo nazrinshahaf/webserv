@@ -1,7 +1,7 @@
 #ifndef LOG_HPP
 # define LOG_HPP
 
-#include "ServerConfig.hpp"
+#include "../config/ServerConfig.hpp"
 #include <string>
 #include <iomanip>
 #include <fstream>
