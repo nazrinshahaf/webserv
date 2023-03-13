@@ -301,7 +301,7 @@ int		Server::responder(const ListeningSocket	&server, int client_fd)
 			Log(DEBUG, "------ Message Sent to Client ------ ");
 			cout << "For loop has ended bro\n";
 			/* Log(INFO, "Client closed with ip : " + server_socket.get_client_ip(), 2, server_socket.get_config()); */
-			Log(ERROR, "Client ip is techincally wrong cause were changing client everything this might be an issue if we need to read socket address somwhere");
+			// Log(ERROR, "Client ip is techincally wrong cause were changing client everything this might be an issue if we need to read socket address somwhere");
 			/* Log(DEBUG, (string("Client socket closed with fd ") + to_string(client_fd)), 2, server_socket.get_config()); */
 			close(client_fd);
 			_requests.erase(client_fd);
@@ -421,8 +421,14 @@ void	Server::launch()
 					
 					cout << "fd " << poll_fds[i].fd << " IS NOT a server" << endl;
 					cout << "pair to find " << pair->second << endl;
-
-					if (poll_fds[i].revents & POLLIN) //handling receiving of http request
+					if (poll_fds[i].revents & POLLHUP) //handling respoonse of http request
+					{
+						Log(INFO, string("Client has closed connection"));
+						client_server_pair.erase(poll_fds[i].fd);
+						_requests.erase(poll_fds[i].fd);
+						poll_fds.erase(poll_fds.begin() + i);
+					}
+					else if (poll_fds[i].revents & POLLIN) //handling receiving of http request
 					{
 						cout << "client POLLIN" << endl;
 						if (receiver(server->second, poll_fds[i].fd) == 1) //if request is done remove from list and add to POLLOUT
@@ -454,12 +460,6 @@ void	Server::launch()
 							cout << "server send partial response to client" << endl;
 							continue;
 						}
-					}
-					else if (poll_fds[i].revents & POLLHUP) //handling respoonse of http request
-					{
-						Log(INFO, string("Client has closed connection"));
-						client_server_pair.erase(poll_fds[i].fd);
-						poll_fds.erase(poll_fds.begin() + i);
 					}
 				}
 			}

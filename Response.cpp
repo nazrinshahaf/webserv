@@ -109,71 +109,23 @@ void Response::respond(void)
         if (_req.path() == "/upload.html")
             _req.process_image();
         ssize_t total_to_send = _entireText.length();
-
-		/* ssize_t len = (_entireText.length() > 100000 ? 100000 : _entireText.length()); */
-		/*  */
-		/* std::stringstream stream; */
-		/* stream << std::hex << len; */
-		/* string to_send(stream.str()); */
-		/*  */
-		/* to_send += "\r\n" + _entireText.substr(len) + "\r\n"; */
-		/*  */
-		/* if (len == (ssize_t)_entireText.length()) */
-		/* 	to_send += "0\r\n\r\n"; */
-		/* ssize_t sent = send(_it->first, to_send.c_str(), len, 0); */
-		/* if (sent == -1 || sent == 0) */
-		/* { */
-		/* 	if (sent == 0) */
-		/* 		throw ResponseException("SENT IS 0"); */
-		/* 	return ; */
-		/* } */
-		/* cout << "sent :" << sent << endl; */
-		/* cout << _entireText.length() << endl; */
-		/* if (sent != total_to_send) */
-		/* 	_entireText.substr(sent); */
-		/* else */
-		/* 	_hasText = false; */
-
 		cout << "total to send :" << total_to_send << endl;
-		cout << "outside send" << endl;
-		ssize_t	total_sent = 0;
-		for (total_sent = 0; total_sent < total_to_send; )
+
+		ssize_t sent = send(_it->first, _entireText.c_str(), _entireText.length(), 0);
+		if (sent == 0)
+			cout << "SENT IS 0" << endl;
+		if (sent == -1)
 		{
-			ssize_t len = (_entireText.length() > 100000 ? 100000 : _entireText.length());
-			string to_send = _entireText.substr(0, len);
-			signal(SIGPIPE, SIG_IGN);
-			ssize_t sent = send(_it->first, to_send.c_str(), len, 0);
-			cout << "sent : " << sent << endl;
-			cout << "len :" << len << endl;
-			if (sent != len)
-			{
-				_entireText.substr(sent);
-				cout << "total sent :" << total_sent << endl;
-				return;
-			}
-			if (sent == 0)
-				throw ResponseException("SENT = 0");
-			if (sent == -1)
-			{
-				/* cout << "in" << endl; */
-				/* std::cout << "total sent bytes: " << total_sent << endl; */
-				/* std::cout << "total To send: " << total_to_send << endl; */
-				/* if (errno == EPIPE) */
-				/* std::cerr << "EPIPE" << endl; */
-				/* std::cerr << "errno :" << "ERGAIN" << errno << endl; */
-				cout << "total sent :" << total_sent << endl;
-				break;
-			}
-			_entireText = _entireText.substr(len);
-			total_sent += sent;
-			/* std::cout << "total sent bytes: " << total_sent << endl; */
-			// std::cout << "total To send: " << total_to_send << endl;
-			if (total_sent == total_to_send)
-				_hasText = false;
-			// cout << "length sent :" << sent << endl;
-			/* cout << "total sent :" << total_sent << endl; */
+			cout << "NOT THE SAME: " << errno << endl;
+			return ;
 		}
-		cout << "total sent :" << total_sent << endl;
+		if (sent != (ssize_t)_entireText.length())
+		{
+			cout << "amount sent:" << sent << endl;
+			_entireText = _entireText.substr(sent);
+		}
+		else
+			_hasText = false;
     }
 }
 
