@@ -43,7 +43,7 @@ using std::cout;
 using std::endl;
 using std::to_string;
 
-Server::Server(const ServerConfigParser &config) : _config(config)
+Server::Server(const ServerConfigParser &config, char **envp) : _config(config), _envp(envp)
 {
 #ifdef PRINT_MSG
 	cout << GREEN "Server Assignment Constructor Called" RESET << endl;
@@ -283,7 +283,7 @@ int		Server::responder(const ListeningSocket	&server, int client_fd)
 	if (_responses.find(client_fd) == _responses.end()) // if this request is new
 	{
 		std::map<int, string>::iterator	client = _client_sockets.find(client_fd);
-		Response responder(req, root_path, client);
+		Response responder(req, root_path, client, _envp);
 		_responses[client_fd] = responder;
 	}
 	try {

@@ -16,24 +16,29 @@ using std::string;
 
 namespace webserv
 {
-    class Response
-    {
-    private:
-        Request							_req;
-        string							_root_path;
-        std::map<int, string>::iterator _it;
-        string							_entireText;
-        bool							_hasText;
+	class Response
+	{
+	private:
+		Request							_req;
+		string							_root_path;
+		std::map<int, string>::iterator _it;
+		string							_entireText;
+		bool							_hasText;
+		char                            **_envp;
 
-        void	readFile(void);
-		string	handle_auto_index(const string &path);
-    public:
-        Response();
-        Response(const Request &req, const string &root_path, std::map<int, string>::iterator &it);
-        ~Response();
+		void        readFile(void);
+		string      handle_auto_index(const string &path);
+		string      processCgi(void);
+		string		find_query_string();
+		string		find_path_info();
 
-        void respond(void);
-        bool hasText(void);
+	public:
+		Response();
+		Response(const Request &req, const string &root_path, std::map<int, string>::iterator &it, char **envp);
+		~Response();
+
+		void respond(void);
+		bool hasText(void);
 
 		class   ResponseException : public std::exception
 		{
@@ -48,7 +53,7 @@ namespace webserv
 			private:
 				string  _err_msg;
 		};
-    };
+	};
 }
 
 #endif
