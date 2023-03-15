@@ -6,7 +6,7 @@ RM = rm -f
 
 SRC = ServerConfig.cpp ServerConfigParser.cpp ServerLocationDirectiveConfig.cpp \
 	  ServerNormalDirectiveConfig.cpp Socket.cpp BindingSocket.cpp ListeningSocket.cpp \
-	  Server.cpp Request.cpp Response.cpp Log.cpp\
+	  Server.cpp Request.cpp Response.cpp Log.cpp Utils.cpp\
 
 SERVER = Server.cpp
 CONFIG = ServerConfig.cpp ServerConfigParser.cpp ServerLocationDirectiveConfig.cpp ServerNormalDirectiveConfig.cpp

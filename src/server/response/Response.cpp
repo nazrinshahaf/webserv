@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <sstream>
+#include "../../Utils.cpp"
 
 #define _XOPEN_SOURCE 700 //for autoindex
 #define _GNU_SOURCE //for checking audoindex file type
@@ -47,18 +48,21 @@ void Response::readFile(void)
 {
     const char *header = "HTTP/1.1 200 OK\nContent-Type: */*\n\n"; // Dynamically add content length TODO
     const char *header2 = "HTTP/1.1 200 OK\r\nContent-Type: image/*\r\n\r\n";
+    const char *header3 = "HTTP/1.1 200 OK\r\nContent-Type: video/mp4\r\n\r\n";
     const char *header_404 = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
 
     std::ifstream myfile;
 
 	string	header_and_text;
 	string	full_path = _root_path + _req.path();
+	utils::replaceAll(full_path, "%20", " ");
 
+	cout << "full path = " << full_path << endl;
 	if (_req.path() == "/")
 	{
 		myfile.open(_root_path + "/index.html", std::ios::binary);
 	}
-	else if (_req.path() == "/autoindex")
+	else if (_req.path() == "/autoindex") //reemove hard code later
 	{
 		_entireText += header;
 		_entireText += handle_auto_index(_root_path);
@@ -69,13 +73,12 @@ void Response::readFile(void)
 		if (stat(full_path.c_str(), &dir_stat) == 0) //if successfully stat
 		{
 			if (dir_stat.st_mode & S_IFDIR) //if dir
-			{
-				Log(ERROR, "FILE IS A DIRECTORY");
 				myfile.open("public/404.html", std::ios::binary);
-			}
 			else //if not dir
-				myfile.open(_root_path + _req.path(), std::ios::binary);
+				myfile.open(full_path, std::ios::binary);
 		}
+		else
+			Log(ERROR, "CANNOT OPEN DIR");
 	}
 
     if (!myfile)
@@ -85,12 +88,10 @@ void Response::readFile(void)
     }
     else
     {
-        if (_req.path().find(".jpg") != string::npos || _req.path().find(".png") != string::npos)
-		{
+        if (full_path.find(".jpg") != string::npos || full_path.find(".png") != string::npos)
             _entireText += header2;
-			/* header_and_text = header2; */
-			/* header_and_text += "Transfer-Encoding: chunked\r\n\r\n"; */
-		}
+        else if (full_path.find(".mp4") != string::npos)
+            _entireText += header3;
         else
             _entireText += header;
     }
