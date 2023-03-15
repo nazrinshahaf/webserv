@@ -129,7 +129,7 @@ void Response::respond(void)
 			cout << "SENT IS 0" << endl;
 		if (sent == -1)
 		{
-			cout << "NOT THE SAME: " << errno << endl;
+			std::cerr << "send err : " << errno << endl;
 			return ;
 		}
 		if (sent != (ssize_t)_entireText.length())

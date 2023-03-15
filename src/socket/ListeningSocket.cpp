@@ -40,6 +40,8 @@ int		ListeningSocket::accept_connections(void)
 	int	addrlen = sizeof(*get_address());
 
 	client_socket_fd = accept(get_sock(), (struct sockaddr *)get_address(), (socklen_t*)&addrlen);
+	/* if (client_socket_fd == -1) */
+	/* 	throw */
 	return (client_socket_fd);
 }
 
