@@ -102,7 +102,6 @@ void	Server::acceptor(ListeningSocket &server)
 		Log(DEBUG, string("Client open with fd : ") + to_string(new_socket_fd), 2, server.get_config());
 		Log(INFO, "Client connected with ip : " + server.get_client_ip(), 2, server.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
 		_client_sockets[new_socket_fd] = string("");
-		/* client_fd_to_insert.fd = acceptor(server->second); */
 
 		struct pollfd client_fd_to_insert;
 		client_fd_to_insert.fd = new_socket_fd;
@@ -153,7 +152,6 @@ int		Server::responder(ListeningSocket &server, int &client_fd)
 	string root_path;
 	const char *temp_message = "HTTP/1.1 500 FUCK OFF\r\nContent-Type: text/html\r\nContent-Length: 119\r\n\r\n";
 
-
 	try //try to find root path (this should be in responder)
 	{
 		root_path = server.get_config().find_normal_directive("root").get_value();
@@ -169,12 +167,7 @@ int		Server::responder(ListeningSocket &server, int &client_fd)
 	{
 		Log(DEBUG, string(RED) + "BAD REQUEST RECEIVED: " + string(RESET));
 		send(client_fd , temp_message , strlen(temp_message), MSG_OOB);
-		/* Log(INFO, "Client closed with ip : " + server.get_client_ip(), 2, server.get_config()); */
-		/* Log(ERROR, "Client ip is techincally wrong cause were changing client everything this might be an issue if we need to read socket address somwhere"); */
 		Log(DEBUG, (string("Client socket closed with fd ") + to_string(client_fd)), 2, server.get_config());
-		close(client_fd);
-		_requests.erase(client_fd);
-		_client_sockets.erase(client_fd);
 		return (1); //full bad reqquest response
 	}
 
@@ -184,43 +177,12 @@ int		Server::responder(ListeningSocket &server, int &client_fd)
 		Response responder(req, root_path, client);
 		_responses[client_fd] = responder;
 	}
-	try {
-		_responses[client_fd].respond();
-		/* if (errno == EPIPE) */
-		/* { */
-		/* 	_requests.erase(client_fd); */
-		/* 	_responses.erase(client_fd); */
-		/* 	close(client_fd); */
-		/* 	_client_sockets.erase(client_fd); */
-		/* 	return (1); //sent full respond epipe */
-		/* } */
-		if (_responses[client_fd].hasText() == false)
-		{
-			Log(DEBUG, "------ Message Sent to Client ------ ");
-			cout << "For loop has ended bro\n";
-			/* Log(INFO, "Client closed with ip : " + server_socket.get_client_ip(), 2, server_socket.get_config()); */
-			// Log(ERROR, "Client ip is techincally wrong cause were changing client everything this might be an issue if we need to read socket address somwhere");
-			/* Log(DEBUG, (string("Client socket closed with fd ") + to_string(client_fd)), 2, server_socket.get_config()); */
-			close(client_fd);
-			_requests.erase(client_fd);
-			_responses.erase(client_fd);
-			_client_sockets.erase(client_fd);
-			return (1); //sent full proper resonpose
-		}
-	} catch (std::exception &e)
+	_responses[client_fd].respond();
+	if (_responses[client_fd].hasText() == false)
 	{
-		cout << e.what() << endl;
-		/* close(client_fd); */
-		/* _requests.erase(client_fd); */
-		/* _responses.erase(client_fd); */
-		/* _client_sockets.erase(client_fd); */
-		return (0); //idk what error this is but its done
+		Log(DEBUG, "------ Message Sent to Client ------ ");
+		return (1); //sent full proper resonpose
 	}
-	// else
-	// 	client++;
-	
-	cout << "ENDING 0 RETURN" << endl;
-	/* Log(ERROR, req.to_str()); */
 	return (0); //partion request
 }
 
@@ -247,104 +209,86 @@ void	Server::launch()
     {
 		Log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size())));
 		int poll_rv = poll(_poll_fds.data(), _poll_fds.size(), 1000);
-		if (poll_rv)
+		if (poll_rv < 0)
 		{
-			for (size_t i = 0; i < _poll_fds.size(); i++)
-			{
-				sockets_type::iterator	server = _server_sockets.find(_poll_fds[i].fd); //finds server
-				
-				if (_poll_fds[i].revents == 0) //if no events are detected on server
-				{
-					Log(DEBUG, "No revents for " + to_string(_poll_fds[i].fd));
-					continue;
-				}
+			Log(ERROR, "Poll failed ");
+			return ;
+		}
+		for (size_t i = 0; i < _poll_fds.size(); i++)
+		{
+			struct pollfd			*curr_poll = &_poll_fds[i];
+			sockets_type::iterator	server = _server_sockets.find(curr_poll->fd); //finds server
 
-				if (_poll_fds[i].revents != POLLIN && server != _server_sockets.end()) //if server is not POLLIN fatal error
+			if (curr_poll->revents == 0) //if no events are detected on server
+			{
+				Log(DEBUG, "No revents for " + to_string(curr_poll->fd));
+				continue;
+			}
+
+			//printing all open clients on fd
+			for (std::map<int, string>::iterator server = _client_sockets.begin(); server != _client_sockets.end(); server++)
+				Log(INFO, (string("Client fd[") + to_string(server->first) + "] is open"));
+
+			if (curr_poll->revents != 0) {
+				printf("fd : %d; revents: %s%s%s\n", curr_poll->fd,
+						(curr_poll->revents & POLLIN)  ? "POLLIN "  : "",
+						(curr_poll->revents & POLLHUP) ? "POLLHUP " : "",
+						(curr_poll->revents & POLLERR) ? "POLLERR " : "");
+			}
+
+			if (server != _server_sockets.end()) //if server socket
+			{
+				if (curr_poll->revents != POLLIN) //if server is not POLLIN fatal error
 				{
 					Log(ERROR, "Server no longer on POLLIN");
 					break ;
 				}
-
-				//printing all open clients on fd
-				for (std::map<int, string>::iterator server = _client_sockets.begin(); server != _client_sockets.end(); server++)
-					Log(INFO, (string("Client fd[") + to_string(server->first) + "] is open"));
-
-				if (_poll_fds[i].revents != 0) {
-					printf("fd : %d; revents: %s%s%s\n", _poll_fds[i].fd,
-							(_poll_fds[i].revents & POLLIN)  ? "POLLIN "  : "",
-							(_poll_fds[i].revents & POLLHUP) ? "POLLHUP " : "",
-							(_poll_fds[i].revents & POLLERR) ? "POLLERR " : "");
-				}
-
-				if (server != _server_sockets.end() && (_poll_fds[i].revents & POLLIN)) //if pollfd is a server and revents is triggered
+				else if (curr_poll->revents & POLLIN) //if pollfd is a server and revents is triggered
 				{
-					Log(DEBUG, "Poll server socket with fd : " + to_string(_poll_fds[i].fd));
+					Log(DEBUG, "Poll server socket with fd : " + to_string(curr_poll->fd));
 					acceptor(server->second);
-					
-					/* struct pollfd client_fd_to_insert; */
-					/* client_fd_to_insert.fd = acceptor(server->second); */
-					/* client_fd_to_insert.events = POLLIN; //set the event for client to be POLLIN */
-					/* _poll_fds.push_back(client_fd_to_insert); */
-					/* _client_server_pair.insert(std::make_pair(client_fd_to_insert.fd, server->first)); */
 				}
-				else //if client socket
-				{
-					std::map<int,int>::iterator	pair = _client_server_pair.find(_poll_fds[i].fd);
-					server = _server_sockets.find(_client_server_pair.find(_poll_fds[i].fd)->second); //find server that client connected to.
-					
-					Log(DEBUG, "Poll client socket with fd : " + to_string(_poll_fds[i].fd) + ". Connected to server with fd : " + to_string(pair->second));
-					if (_poll_fds[i].revents & POLLHUP) //handling respoonse of http request
-					{
-						Log(INFO, string("Client Hung Up Connection (POLLHUP)."));
+			}
+			else //if client socket
+			{
+				std::map<int,int>::iterator	pair = _client_server_pair.find(curr_poll->fd);
+				server = _server_sockets.find(_client_server_pair.find(curr_poll->fd)->second); //find server that client connected to.
 
-						/* remove_client(_poll_fds[i].fd); */
-						close(_poll_fds[i].fd);
-						_client_server_pair.erase(_poll_fds[i].fd);
-						_requests.erase(_poll_fds[i].fd);
-						_client_sockets.erase(_poll_fds[i].fd);
-						_poll_fds.erase(_poll_fds.begin() + i);
-					}
-					else if (_poll_fds[i].revents & POLLIN) //handling receiving of http request
+				Log(DEBUG, "Poll client socket with fd : " + to_string(curr_poll->fd) + ". Connected to server with fd : " + to_string(pair->second));
+				if (curr_poll->revents & POLLHUP) //if client hungup (refresh) or ^C
+				{
+					Log(INFO, string("Client Hung Up Connection " + string(YELLOW) + "(POLLHUP)" + string(RESET)));
+					remove_client(curr_poll->fd, i);
+				}
+				else if (curr_poll->revents & POLLIN) //handling receiving of http request
+				{
+					Log(DEBUG, "Client POLLIN");
+					if (receiver(curr_poll->fd) == 1) //if request is done remove from list and add to POLLOUT
 					{
-						Log(DEBUG, "Client POLLIN");
-						if (receiver(_poll_fds[i].fd) == 1) //if request is done remove from list and add to POLLOUT
-						{
-							Log(DEBUG, "Client sent full request");
-							_poll_fds[i].events = POLLOUT;
-						}
-						else //if request not done
-						{
-							Log(DEBUG, "Client not done full request");
-							continue;
-						}
+						Log(DEBUG, "Client sent full request");
+						curr_poll->events = POLLOUT;
 					}
-					else if (_poll_fds[i].revents & POLLOUT) //handling respoonse of http request
+					else //if request not done
 					{
-						Log(DEBUG, "Client POLLOUT");
-						if (responder(server->second, _poll_fds[i].fd) == 1) //if finish sending response
-						{
-							Log(DEBUG, "Server send full response to client");
-							_client_server_pair.erase(_poll_fds[i].fd);
-							_poll_fds.erase(_poll_fds.begin() + i);
-						}
-						else
-						{
-							Log(DEBUG, "Server send partial response to client");
-							continue;
-						}
+						Log(DEBUG, "Client not done full request");
+						continue;
+					}
+				}
+				else if (curr_poll->revents & POLLOUT) //handling respoonse of http request
+				{
+					Log(DEBUG, "Client POLLOUT");
+					if (responder(server->second, curr_poll->fd) == 1) //if finish sending response
+					{
+						Log(DEBUG, "Server send full response to client");
+						remove_client(curr_poll->fd, i);
+					}
+					else
+					{
+						Log(DEBUG, "Server send partial response to client");
+						continue;
 					}
 				}
 			}
-		}
-		else if (poll_rv == 0)
-		{
-			/* Log(DEBUG, "Poll Loop"); */
-			/* Log(DEBUG, "Request size : " + to_string(_requests.size())); */
-		}
-		else if (poll_rv < 0)
-		{
-			Log(ERROR, "Poll failed ");
-			return ;
 		}
     }
 }
@@ -365,11 +309,13 @@ void	Server::add_servers_to_poll(void)
 	}
 }
 
-void	Server::remove_client(const int &client_fd)
+void	Server::remove_client(const int &client_fd, const int &poll_index)
 {
 	Log(DEBUG, (string("Client socket closed with fd ") + to_string(client_fd)));
 	_client_server_pair.erase(client_fd);
 	_requests.erase(client_fd);
+	_responses.erase(client_fd);
 	_client_sockets.erase(client_fd);
 	close(client_fd);
+	_poll_fds.erase(_poll_fds.begin() + poll_index);
 }

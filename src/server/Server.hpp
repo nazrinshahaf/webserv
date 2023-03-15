@@ -97,7 +97,7 @@ namespace webserv
 			int		responder(ListeningSocket &server, int &client_fd);
 
 			void	add_servers_to_poll(void);
-			void	remove_client(const int &client_fd);
+			void	remove_client(const int &client_fd, const int &poll_index);
 	};
 }
 
