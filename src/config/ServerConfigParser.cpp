@@ -10,8 +10,10 @@
 #include <cstddef>
 #include <map>
 #include <ostream>
+#include <set>
 #include <string>
 #include <sys/_types/_size_t.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -28,11 +30,10 @@ using namespace webserv;
 const char *valid_base_directives_array[] = {"server"};
 
 const char *valid_server_normal_directives_array[] = {"listen",
-	"server_name", "access_log", "error_log", "location", "root",
-	"error_page"};
+	"error_log", "location", "root", "error_page", "index", "autoindex"};
 
 const char *valid_server_location_directives_array[] = {"fastcgi_pass",
-	"root", "allowed_methods"};
+	"root", "allowed_methods", "autoindex", "index"};
 
 ServerConfigParser::ServerConfigParser(const string &config_str) : _config_str(config_str)
 {
@@ -129,10 +130,6 @@ void ServerConfigParser::parse_config(void)
 	if (config.length() == 0)
 		throw ServerParserException("U passed an empty config mother fucker");
 
-	//cout << "===============" << endl;
-	//cout << config;
-	//cout << "===============" << endl;
-
 	//Keep trimming till I find a non white space (basically first word)
 	//Cut out everything before first word instance
 	config = config.substr(config.find_first_not_of("\t\n "));
@@ -148,10 +145,10 @@ void ServerConfigParser::parse_config(void)
 		if (line_length == config.npos)
 			break;
 
-		//cout << "Config" << endl;
-		//cout << "===============" << endl;
-		//cout << config;
-		//cout << "===============" << endl;
+		/* cout << "Config" << endl; */
+		/* cout << "===============" << endl; */
+		/* cout << config; */
+		/* cout << "===============" << endl; */
 
 		key = extract_key(config);
 		valid_key = is_valid_base_directive(key);
@@ -184,42 +181,55 @@ void ServerConfigParser::parse_config(void)
 
 void	ServerConfigParser::validate_config(void)
 {
-	for (ServerConfigParser::cit_t config_block = _config.begin(); config_block != _config.end(); config_block++)
+	std::set<string>	ports;
+	for (ServerConfigParser::cit_t config_block = _config.begin(); config_block != _config.end(); config_block++) //for each server_block in http
 	{
 		if (config_block->first == "server")
 		{
+			std::set<string>	location_paths;
 			ServerConfig					server_config = dynamic_cast<ServerConfig&>(*config_block->second);
 			ServerConfig::map_type			server_map = server_config.get_server_config();
 
-			if (server_map.find("listen") == server_map.end())
-				throw ServerParserException("Server block must contain at least one listen");
-			else if (server_map.count("listen") == 2)
-				throw ServerParserException("Server block must contain only one listen");
-			for (ServerConfig::cit_t server_line = server_map.begin(); server_line != server_map.end(); server_line++) //check each individual directive
+			if (ports.count(server_config.find_normal_directive("listen").get_value()) == 1)
+				throw ServerParserException("Config cant have multiple server with the same ports");
+			ports.insert(server_config.find_normal_directive("listen").get_value());
+
+			validate_server_map_directive_count(server_map);
+			for (ServerConfig::cit_t server_line = server_map.begin(); server_line != server_map.end(); server_line++) //for each directive in server
 			{
 				int	directive_type = is_valid_server_normal_directive(server_line->first);
-				if (directive_type == 1 || directive_type == 2)
+				if (directive_type == 1 || directive_type == 2) //if normal_directive
 				{
 					ServerNormalDirectiveConfig	normal_directive =
 						dynamic_cast<ServerNormalDirectiveConfig&>(*server_line->second);
+
 					if (server_line->first == "listen")
-						validate_listen(normal_directive);
+						validate_listen(normal_directive.get_value());
 					if (server_line->first == "error_log")
-						validate_error_log(normal_directive);
+						validate_error_log(normal_directive.get_value2());
 					if (server_line->first == "error_page")
-						validate_error_page(normal_directive);
+						validate_error_page(normal_directive.get_value());
+					if (server_line->first == "autoindex")
+						validate_auto_index(normal_directive.get_value());
 				}
-				else
+				else //if location_directive
 				{
 					ServerLocationDirectiveConfig			location_directive =
 						dynamic_cast<ServerLocationDirectiveConfig&>(*server_line->second);
 					ServerLocationDirectiveConfig::map_type	location_map = location_directive.get_config();
 
+					if (location_paths.count(location_directive.get_path()) == 1)
+						throw ServerParserException("Server block cant have multiple duplicate location paths");
+					location_paths.insert(location_directive.get_path());
+
+					validate_location_map_directive_count(location_directive.get_config());
 					for (ServerLocationDirectiveConfig::cit_t location_line = location_map.begin();
 							location_line != location_map.end(); location_line++)
 					{
 						if (location_line->first == "allowed_methods")
-							validate_allowed_methods(location_directive, *location_line);
+							validate_allowed_methods(location_directive.split_methods());
+						if (location_line->first == "autoindex")
+							validate_auto_index(location_directive.get_value("autoindex"));
 					}
 				}
 			}
@@ -299,10 +309,10 @@ string	ServerConfigParser::extract_bracket_content(std::string *config,
 
 	//Move the config to next block (might move somwhere else?)
 	*config = config->substr(final_pos + 1);
-	//cout << "server_block in" << endl;
-	//cout << "--------------" << endl;
-	//cout << server_block;
-	//cout << "--------------" << endl;
+	/* cout << "server_block in" << endl; */
+	/* cout << "--------------" << endl; */
+	/* cout << "[" << server_block << "]"; */
+	/* cout << "--------------" << endl; */
 	//cout << "config in" << endl;
 	//cout << "--------------" << endl;
 	//cout << *config;
@@ -312,8 +322,12 @@ string	ServerConfigParser::extract_bracket_content(std::string *config,
 	//cout << server_block[server_block.find_last_not_of("\t\n ")] << endl;
 	//cout << server_block.find_last_not_of("\t\n ") << endl;
 	//cout << server_block.length() << endl;
-	server_block = server_block.substr(server_block.find_first_not_of("\t\n "),
-			server_block.find_last_not_of("\t\n ") + 1);
+	try {
+		server_block = server_block.substr(server_block.find_first_not_of("\t\n "),
+				server_block.find_last_not_of("\t\n ") + 1);
+	} catch (std::out_of_range &e) {
+		throw ServerParserException("Nothing in server block");
+	}
 	//cout << "--------------" << endl;
 	//cout << server_block;
 	//cout << "--------------" << endl;
@@ -481,7 +495,7 @@ const ServerNormalDirectiveConfig		ServerConfigParser::parse_server_normal_direc
 		string	value2;
 
 		if (value_count != 2)
-			throw ServerParserException("Some error wrong value count for key {" + key + "}");
+			throw ServerParserException("Wrong value count for key {" + key + "}");
 		temp = extract_value(normal_directive_copy);
 		value = extract_key(temp);
 		value2 = extract_value(temp);
@@ -490,7 +504,7 @@ const ServerNormalDirectiveConfig		ServerConfigParser::parse_server_normal_direc
 	else if (is_valid == 1) //Check for Normal Directives with one value
 	{
 		if (value_count != 1)
-			throw ServerParserException("Some error wrong value count for key {" + key + "}");
+			throw ServerParserException("Wrong value count for key {" + key + "}");
 		value = extract_value(normal_directive_copy);
 		normal_directive.set_config(value);
 	}
@@ -583,40 +597,63 @@ bool is_string_path(const string &str)
 	return (1);
 }
 
-void		ServerConfigParser::validate_listen(const ServerNormalDirectiveConfig &directive) const
+void		ServerConfigParser::validate_server_map_directive_count(const ServerConfig::map_type &server_map) const
 {
-	if (!is_string_num(directive.get_value()))
+	if (server_map.count("listen") != 1)
+		throw ServerParserException("Server block must contain only one listen");
+	if (server_map.count("root") != 1)
+		throw ServerParserException("Server block must container root");
+	if (server_map.count("index") != 1)
+		throw ServerParserException("Server block must container index");
+}
+
+void		ServerConfigParser::validate_location_map_directive_count(const ServerLocationDirectiveConfig::map_type &location_map) const
+{
+	if (location_map.count("root") > 1)
+		throw ServerParserException("Location block must contain only 1 root");
+	if (location_map.count("index") > 1)
+		throw ServerParserException("Location block must contain only 1 index");
+}
+
+void		ServerConfigParser::validate_listen(const string &value) const
+{
+	if (!is_string_num(value))
 		throw ServerParserException("Invalid character found in listen directive");
 }
 
-void		ServerConfigParser::validate_error_log(const ServerNormalDirectiveConfig &directive) const
+void		ServerConfigParser::validate_error_log(const string &value) const
 {
-	string	debug_level = directive.get_value2();
-
-	std::transform(debug_level.begin(), debug_level.end(), debug_level.begin(), ::toupper); //convert to uppercase
-	if (debug_level != "DEBUG" && debug_level != "INFO" && debug_level != "WARN" && debug_level != "ERROR")
+	string copy = value;
+	std::transform(copy.begin(), copy.end(), copy.begin(), ::toupper); //convert to uppercase
+	if (copy != "DEBUG" && copy != "INFO" && copy != "WARN" && copy != "ERROR")
 		throw ServerParserException("Invalid debug level");
 }
 
-void		ServerConfigParser::validate_error_page(const ServerNormalDirectiveConfig &directive) const
+void		ServerConfigParser::validate_error_page(const string &value) const
 {
-	if (!is_string_num(directive.get_value()))
+	if (!is_string_num(value))
 		throw ServerParserException("Invalid character found in error_page number directive");
 }
 
-void		ServerConfigParser::validate_allowed_methods(const ServerLocationDirectiveConfig &directive,
-		const ServerLocationDirectiveConfig::pair_type &pair) const
+void		ServerConfigParser::validate_auto_index(const string &value) const
 {
-	int	method_count = count_values_in_line(pair.second) + 1;
-	if (method_count > 3)
+	string copy = value;
+	std::transform(copy.begin(), copy.end(), copy.begin(), ::toupper); //convert to uppercase
+	if (copy != "ON" && copy !="OFF")
+		throw ServerParserException("Invalid value for autoindex");
+}
+
+void		ServerConfigParser::validate_allowed_methods(const std::vector<string> &allowed_mothods) const
+{
+	if (allowed_mothods.size() > 3)
 		throw ServerParserException("Too many methods in allowed_mothods");
 
-	std::vector<string>	methods = directive.split_methods();
-	for (std::vector<string>::iterator method = methods.begin(); method != methods.end(); method++)
+	std::vector<string>	copy = allowed_mothods;
+	for (std::vector<string>::iterator method = copy.begin(); method != copy.end(); method++)
 	{
 		std::transform(method->begin(), method->end(), method->begin(), ::toupper); //convert to uppercase
 		if (*method != "GET" && *method != "POST" && *method != "DELETE")
-			throw ServerParserException("Invalid allowed_methods");
+			throw ServerParserException("Invalid value for allowed_methods");
 	}
 }
 

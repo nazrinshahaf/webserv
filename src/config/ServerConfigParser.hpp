@@ -233,12 +233,14 @@ namespace webserv
 
 			void		initialize_valid_directives(const char **directives, std::set<string> *set, size_t len);
 
+			void		validate_server_map_directive_count(const ServerConfig::map_type &server_map) const;
+			void		validate_location_map_directive_count(const ServerLocationDirectiveConfig::map_type &location_map) const;
 
-			void		validate_listen(const ServerNormalDirectiveConfig &directive) const;
-			void		validate_error_log(const ServerNormalDirectiveConfig &directive) const;
-			void		validate_error_page(const ServerNormalDirectiveConfig &directive) const;
-			void		validate_allowed_methods(const ServerLocationDirectiveConfig &directive,
-							const ServerLocationDirectiveConfig::pair_type &pair) const;
+			void		validate_listen(const string &value) const;
+			void		validate_error_log(const string &value) const;
+			void		validate_error_page(const string &value) const;
+			void		validate_allowed_methods(const std::vector<string> &allowed_methods) const;
+			void		validate_auto_index(const string &value) const;
 
 			class   ServerParserException : public std::exception
 			{

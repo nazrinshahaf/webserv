@@ -98,7 +98,6 @@ void	Server::acceptor(ListeningSocket &server)
 	new_socket_fd = server.accept_connections();
 	if (new_socket_fd >= 0)
 	{
-
 		Log(DEBUG, string("Client open with fd : ") + to_string(new_socket_fd), 2, server.get_config());
 		Log(INFO, "Client connected with ip : " + server.get_client_ip(), 2, server.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
 		_client_sockets[new_socket_fd] = string("");

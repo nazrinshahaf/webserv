@@ -2,6 +2,7 @@
 # define SERVERLOCATIONDIRECTIVECONFIG_HPP
 
 #include "ServerBaseConfig.hpp"
+#include "BaseConfig.hpp"
 #include "../colours.h"
 
 #include <string>
@@ -35,6 +36,7 @@ namespace webserv
 
 			const map_type									&get_config() const;
 			pair<const_iterator_type,const_iterator_type>	find_values(const string &key) const;
+			const string									&get_value(const string &key) const;
 			std::vector<string>								split_methods() const;
 
 			//void	insert_config(const string &key, const string &value);
@@ -42,7 +44,7 @@ namespace webserv
 			void			set_path(const string &path_to_set);
 			const string	&get_path(void) const;
 
-			void	insert_config(const std::pair<string, string> &pair_to_insert);
+			void			insert_config(const std::pair<string, string> &pair_to_insert);
 
 		private:
 			map_type	_location_directive_config;

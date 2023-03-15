@@ -63,7 +63,21 @@ ServerLocationDirectiveConfig::get_config() const
 pair<ServerLocationDirectiveConfig::const_iterator_type, ServerLocationDirectiveConfig::const_iterator_type>
 ServerLocationDirectiveConfig::find_values(const string &key) const
 {
+	cit_t pair = _location_directive_config.find(key);
+
+	if (pair == _location_directive_config.end())
+		throw BaseConfig::ConfigException("Key {" + key + "} not found in get_value.");
 	return (_location_directive_config.equal_range(key));
+}
+
+const string &
+ServerLocationDirectiveConfig::get_value(const string &key) const
+{
+	cit_t	pair = _location_directive_config.find(key);
+
+	if (pair == _location_directive_config.end())
+		throw BaseConfig::ConfigException("Key {" + key + "} not found in get_value.");
+	return (pair->second);
 }
 
 std::vector<string>	ServerLocationDirectiveConfig::split_methods() const
