@@ -1,4 +1,8 @@
 #include "Log.hpp"
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <string>
 
 using std::cout;
 using std::endl;
@@ -32,7 +36,7 @@ void	print_time(std::ostream &stream)
 
 void	Log::print_debug_level(const log_level &level, const int &log_to_file, std::fstream &log_file, const log_level &file_log_level) const
 {
-	switch(level)
+	switch (level)
 	{
 		case 0:
 			if (log_to_file != 1 && level >= _base_log_level)
@@ -62,6 +66,38 @@ void	Log::print_debug_level(const log_level &level, const int &log_to_file, std:
 	}
 }
 
+void	Log::print_error_msg(const int &log_to_file, std::fstream &log_file, const log_level &file_log_level, const string &log_msg) const
+{
+	switch (log_to_file)
+	{
+		case 2 :
+			cout << "Error " << std::setw(8) << ": " << log_msg << endl;
+			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
+			print_time(cout);
+			cout << "At line " << std::setw(6)<< ": " << std::to_string(__LINE__) << endl;
+			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
+			print_time(cout);
+			cout << "In function : " << __PRETTY_FUNCTION__ << endl;
+		case 1 :
+			log_file << "Error " << std::setw(8) << ": " << log_msg << endl;
+			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
+			print_time(log_file);
+			log_file << "At line " << std::setw(6)<< ": " << std::to_string(__LINE__) << endl;
+			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
+			print_time(log_file);
+			log_file << "In function : " << __PRETTY_FUNCTION__ << endl;
+			break ;
+		case 0 :
+			cout << "Error " << std::setw(8) << ": " << log_msg << endl;
+			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
+			print_time(cout);
+			cout << "At line " << std::setw(6)<< ": " << std::to_string(__LINE__) << endl;
+			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
+			print_time(cout);
+			cout << "In function : " << __PRETTY_FUNCTION__ << endl;
+	}
+}
+
 void	Log::print_debug_msg(const log_level &level, const int &log_to_file, std::fstream &log_file,
 			const log_level &file_log_level, const string &log_msg) const
 {
@@ -83,18 +119,27 @@ void	Log::print_debug_msg(const log_level &level, const int &log_to_file, std::f
 				if (level < _base_log_level)
 					break;
 				print_time(cout);
-				cout << log_line << endl;
-			case 1 :
+				if (level == ERROR)
+					print_error_msg(log_to_file, log_file, file_log_level, log_msg);
+				else
+					cout << log_line << endl;
+			case 1 : 
 				if (file_log_level < _base_log_level)
 					break;
 				print_time(log_file);
-				log_file << log_line << endl;
+				if (level == ERROR)
+					print_error_msg(log_to_file, log_file, file_log_level, log_msg);
+				else
+					log_file << log_line << endl;
 				break;
 			case 0 :
 				if (level < _base_log_level)
 					break;
 				print_time(cout);
-				cout << log_line << endl;
+				if (level == ERROR)
+					print_error_msg(log_to_file, log_file, file_log_level, log_msg);
+				else
+					cout << log_line << endl;
 		}
 		if (log_msg_copy.find_first_of("\n") == log_msg_copy.npos)
 			break ;

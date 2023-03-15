@@ -27,6 +27,8 @@ namespace webserv
 		private:
 			void	print_debug_level(const log_level &level, const int &log_to_file, std::fstream &log_file,
 						const log_level &file_log_level) const;
+			void	print_error_msg(const int &log_to_file, std::fstream &log_file,
+						const log_level &file_log_level, const string &log_msg) const;
 			void	print_debug_msg(const log_level &level, const int &log_to_file, std::fstream &log_file,
 						const log_level &file_log_level,const string &log_msg) const;
 	};

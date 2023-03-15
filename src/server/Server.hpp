@@ -16,6 +16,7 @@
 
 
 using std::map;
+using std::vector;
 using std::string;
 
 namespace webserv 
@@ -85,13 +86,18 @@ namespace webserv
     		map<int, string>		_client_sockets;
     		map<int, Request>    	_requests;
     		map<int, Response>    	_responses;
+			map<int, int>			_client_server_pair;
 			ServerConfigParser		_config;
+			vector<struct pollfd>	_poll_fds;
+
 			static const int		_recv_buffer_size = 65535; //min read bytes
 
-			int		acceptor(ListeningSocket &socket);
-			/* int		handler(ListeningSocket &socket); */
-			int		receiver(const ListeningSocket &server, const int &const_fd);
-			int		responder(const ListeningSocket &server, int client_fd);
+			void	acceptor(ListeningSocket &server);
+			int		receiver(const int &const_fd);
+			int		responder(ListeningSocket &server, int &client_fd);
+
+			void	add_servers_to_poll(void);
+			void	remove_client(const int &client_fd, const int &poll_index);
 	};
 }
 
