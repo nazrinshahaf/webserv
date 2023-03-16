@@ -117,6 +117,7 @@ int	Server::receiver(const int &client_fd)
 	char	buffer[_recv_buffer_size + 1] = {0}; //+1 for \0
 	long	valread;
 	string	client_header_request;
+	Request	req;
 	/* std::map<int, string>::iterator	client = _client_sockets.find(client_fd); */
 
 	valread = recv(client_fd, buffer, _recv_buffer_size, 0);
@@ -129,17 +130,16 @@ int	Server::receiver(const int &client_fd)
 		valread = recv(client_fd, buffer, _recv_buffer_size, 0);
 	}
 
-	Request	req(client_header_request, client_fd);
 
 	if (_requests.find(client_fd) == _requests.end()) // if this request is new
-		_requests[client_fd] = req;
+		_requests[client_fd] = Request(client_header_request, client_fd);
 	else //if this request is already being processed
 	{
 		req = _requests[client_fd];
 		if (client_header_request.length() != 0)
 			req.add_body(client_header_request);
 	}
-	if (req.done())
+	if (req.done() || req.bad_request())
 	{
 		Log(DEBUG, req.to_str());
 		return (1); //sent full request
@@ -150,15 +150,6 @@ int	Server::receiver(const int &client_fd)
 int		Server::responder(ListeningSocket &server, int &client_fd)
 {
 	Request	req = _requests.find(client_fd)->second;
-	const char *temp_message = "HTTP/1.1 500 FUCK OFF\r\nContent-Type: text/html\r\nContent-Length: 119\r\n\r\n";
-
-	if (req.bad_request())
-	{
-		Log(DEBUG, string(RED) + "BAD REQUEST RECEIVED: " + string(RESET));
-		send(client_fd , temp_message , strlen(temp_message), MSG_OOB);
-		Log(DEBUG, (string("Client socket closed with fd ") + to_string(client_fd)), 0, NULL, NULL, 2, server.get_config());
-		return (1); //full bad reqquest response
-	}
 
 	if (_responses.find(client_fd) == _responses.end()) // if this request is new
 	{
@@ -166,6 +157,7 @@ int		Server::responder(ListeningSocket &server, int &client_fd)
 		Response responder(req, server, client->first);
 		_responses[client_fd] = responder;
 	}
+
 	_responses[client_fd].respond();
 	if (_responses[client_fd].hasText() == false)
 	{
@@ -196,7 +188,7 @@ void	Server::launch()
 	add_servers_to_poll();
     while(1)
     {
-		Log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size())));
+		/* Log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size()))); */
 		int poll_rv = poll(_poll_fds.data(), _poll_fds.size(), 1000);
 		if (poll_rv < 0)
 		{
@@ -210,7 +202,7 @@ void	Server::launch()
 
 			if (curr_poll->revents == 0) //if no events are detected on server
 			{
-				Log(DEBUG, "No revents for " + to_string(curr_poll->fd));
+				/* Log(DEBUG, "No revents for " + to_string(curr_poll->fd)); */
 				continue;
 			}
 

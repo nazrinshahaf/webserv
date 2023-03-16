@@ -26,15 +26,24 @@ using namespace webserv;
 using std::cout;
 using std::endl;
 
-Response::Response()
+Response::Response() : _hasText(false)
 {
-    _hasText = false;
 }
 
 Response::Response(const Request &req, ListeningSocket &server, const int &client_fd) : 
 	_req(req), _server(server), _client_fd(client_fd), _hasText(true)
 {
+	if (_req.bad_request())
+	{
+		_error_code = 400;
+		build_header();
+		Log(DEBUG, "BAD REQUEST RECEIVED");
+		send(client_fd , _entireHeader.c_str() , _entireHeader.length(), MSG_OOB);
+		_hasText = false;
+	}
+
 	_serverConfig = server.get_config();
+	_error_code = 0;
 	try //try to find root path (this should be in responder)
 	{
 		_root_path = _serverConfig.find_normal_directive("root").get_value();
@@ -44,7 +53,20 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 		Log(WARN, string(e.what()), 0, NULL, NULL, 2, server.get_config());
 		_root_path = "/";
 	}
-    this->readFile();
+
+    /* this->readFile(); */
+	if (_req.type() == "GET")
+	{
+		if (is_location_block() == 1)
+			handle_location_block();
+		else
+			handle_default_block();
+		build_header();
+		_entireText = _entireHeader + _entireBody;
+	}
+	if (_req.type() == "POST")
+	{
+	}
 }
 
 Response::~Response()
@@ -52,88 +74,167 @@ Response::~Response()
     
 }
 
-bool Response::hasText(void) { return (_hasText); }
-
-void Response::readFile(void)
+string	Response::get_true_root(const ServerLocationDirectiveConfig::map_type &location_block_config) const
 {
-    const char *header = "HTTP/1.1 200 OK\nContent-Type: */*\n\n"; // Dynamically add content length TODO
-    const char *header2 = "HTTP/1.1 200 OK\r\nContent-Type: image/*\r\n\r\n";
-    const char *header3 = "HTTP/1.1 200 OK\r\nContent-Type: video/mp4\r\n\r\n";
-    const char *header_404 = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
+	string	true_root;
 
-    std::ifstream myfile;
+	if (location_block_config.find("root") != location_block_config.end()) //if root exist in location
+		true_root = location_block_config.find("root")->second;
+	else //if root doesnt exist in location
+		true_root = _serverConfig.find_normal_directive("root").get_value(); //can sub to _root_path if we use it often
+	return (true_root);
+}
 
-	string	header_and_text;
+string	Response::get_true_index(const ServerLocationDirectiveConfig::map_type &location_block_config) const
+{
+	string	true_index;
+
+	if (location_block_config.find("index") != location_block_config.end()) //if index exist in location
+		true_index = location_block_config.find("index")->second;
+	else //if index doesnt exist in location
+		true_index = _serverConfig.find_normal_directive("index").get_value(); //can sub to _root_path if we use it often
+	return (true_index);
+}
+
+int		Response::is_location_block(void) const
+{
+	try {
+		ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(_req.path());
+		return (1);
+	} catch (BaseConfig::ConfigException &e) {
+		return (0);
+	}
+}
+
+int		Response::is_autoindex(void) const
+{
+	try {
+		ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(_req.path());
+
+		if (location_block.get_config().find("autoindex") == location_block.get_config().end())
+			return (0);
+		return (1);
+	} catch (BaseConfig::ConfigException &e) {
+		return (0);
+	}
+}
+
+void	Response::handle_location_block(void)
+{
 	string	full_path = _root_path + _req.path();
+
 	utils::replaceAll(full_path, "%20", " ");
 
 	cout << "full path = " << full_path << endl;
+	Log(DEBUG, "Path = " + _req.path());
+	Log(DEBUG, "Full path = " + full_path);
+
+	//if req path is default
 	if (_req.path() == "/")
-	{
-		myfile.open(_root_path + "/index.html", std::ios::binary);
+		cout << "Server Default" << endl;
+
+	//check if req path is a location block.
+	try {
+		ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(_req.path());
+		ServerLocationDirectiveConfig::map_type	location_block_config = location_block.get_config();
+		Log(DEBUG, "URL path is a location");
+
+		full_path = get_true_root(location_block_config) + "/";
+		if (is_autoindex() == 1) //if autoindex
+		{
+			_entireBody += handle_auto_index(full_path);
+			return ;
+		}
+		Log(WARN, "full_path : " + full_path);
+		full_path += get_true_index(location_block_config);
+		Log(WARN, "full_path : " + full_path);
+		read_file(full_path);
+	} catch (BaseConfig::ConfigException &e) { //no location just search root directory
+		Log(DEBUG, "URL path is not location");
 	}
-	else if (_req.path() == "/autoindex") //reemove hard code later
+}
+
+void	Response::handle_default_block(void)
+{
+	string	full_path;
+
+	full_path += _serverConfig.find_normal_directive("root").get_value() + "/";
+	if (_req.path() == "/")
+		full_path += _serverConfig.find_normal_directive("index").get_value();
+	else
+		full_path += _req.path();
+	read_file(full_path);
+}
+
+void	Response::build_header(void)
+{
+    //const char *header = "HTTP/1.1 200 OK\nContent-Type: */*\n\n"; // Dynamically add content length TODO
+
+	_entireHeader = "HTTP/1.1 ";
+	if (_error_code)
 	{
-		_entireText += header;
-		_entireText += handle_auto_index(_root_path);
+		_entireHeader += std::to_string(_error_code) + " ";
+		switch (_error_code)
+		{
+			case (400): _entireHeader += "Bad Request"; break;
+			case (403): _entireHeader += "Forbidden"; break;
+			case (404): _entireHeader += "Not Found"; break;
+			default: _entireHeader += "Not OK"; break;
+		}
 	}
 	else
+		_entireHeader += "200 OK";
+	_entireHeader += "\r\n";
+	_entireHeader += "Content-Type: */*\r\n";
+	_entireHeader += "Content-Length: " + std::to_string(_entireBody.length()) + "\r\n\r\n";
+}
+
+
+void Response::read_file(const string &path) //change name later
+{
+    std::ifstream file;
+	string path_no_spaces = path;
+	struct stat	dir_stat;
+
+	utils::replaceAll(path_no_spaces, "%20", " ");
+	Log(WARN, "in read_file : [" + path_no_spaces + "]");
+
+	if (stat(path_no_spaces.c_str(), &dir_stat) == 0) //if successfully stat
 	{
-		struct stat	dir_stat;
-		if (stat(full_path.c_str(), &dir_stat) == 0) //if successfully stat
+		if (dir_stat.st_mode & S_IFDIR) //if dir
 		{
-			if (dir_stat.st_mode & S_IFDIR) //if dir
-			{
-				Log(ERROR, "FILE IS A DIRECTORY", __LINE__, __PRETTY_FUNCTION__, __FILE__);
-				myfile.open("public/404.html", std::ios::binary);
-			}
-			else //if not dir
-				myfile.open(full_path, std::ios::binary);
+			Log(ERROR, "FILE IS A DIRECTORY HANDLE OPEN NEW PATH", __LINE__, __PRETTY_FUNCTION__, __FILE__);
+			_error_code = 404;
+			file.open("public/404.html", std::ios::binary);
 		}
-		else
-			Log(ERROR, "CANNOT OPEN DIR");
+		else //if not dir
+		{
+			Log(DEBUG, "File opened");
+			file.open(path_no_spaces, std::ios::binary);
+		}
 	}
+	else
+		Log(ERROR, "CANNOT OPEN FILE SOMETHING VERY BAD HAPPENED", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 
-    if (!myfile)
+    if (!file)
     {
-        _entireText += header_404;
-        myfile.open("public/404.html", std::ios::binary);
-    }
-    else
-    {
-        if (full_path.find(".jpg") != string::npos || full_path.find(".png") != string::npos)
-            _entireText += header2;
-        else if (full_path.find(".mp4") != string::npos)
-            _entireText += header3;
-        else
-            _entireText += header;
+		_error_code = 404;
+        file.open("public/404.html", std::ios::binary);
     }
 
-	/* cout << "before read buffer" << endl; */
     char read_buffer[65535]; // create a read_buffer
-    while (myfile.read(read_buffer, sizeof(read_buffer)))
-        _entireText.append(read_buffer, myfile.gcount());
-    _entireText.append(read_buffer, myfile.gcount());
-	///* if (_req.path().find(".jpg") != string::npos || _req.path().find(".png") != string::npos) */
-	///* { */
-	///* 	/* header_and_text += "Content-Length: "; */
-	///* 	/* header_and_text += _entireText.length(); */
-	///* 	cout << header_and_text << endl; */
-	///* 	_entireText = header_and_text + _entireText; */
-	///* } */
-	///* cout << "before close" << endl; */
-    myfile.close();
-	/* cout << "after close" << endl; */
-    cout << "WHOLE STRING IS: " << _entireText.length() << endl;
-    cout << "BODY IS: " << _entireText.length() - strlen(header2) << endl;
+    while (file.read(read_buffer, sizeof(read_buffer)))
+        _entireBody.append(read_buffer, file.gcount());
+    _entireBody.append(read_buffer, file.gcount());
+
+	file.close();
 }
 
 void Response::respond(void)
 {
-    // cout << "I"
     if (_req.done())
     {
-        if (_req.path() == "/upload.html")
+        if (_req.path() == "/upload.html") //move later
             _req.process_image();
         ssize_t total_to_send = _entireText.length();
 		cout << "total to send :" << total_to_send << endl;
@@ -155,6 +256,8 @@ void Response::respond(void)
 			_hasText = false;
     }
 }
+
+bool Response::hasText(void) { return (_hasText); }
 
 /*
  * change this later pls..
@@ -269,6 +372,7 @@ std::string	Response::handle_auto_index(const string &path)
 	struct dirent				*file;     
 	std::multimap<int, string>	sorted_mmap;
 
+	cout << path << endl;
 	auto_index_html += auto_index_create_html(0, path);
 	directory = opendir(path.c_str());
 	if (directory != NULL)

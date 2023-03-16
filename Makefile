@@ -36,7 +36,7 @@ OBJECTS = $(ALL_FILES:.cpp=.o)
 OBJ_DIR = obj/
 
 $(NAME): $(OBJECTS)
-	$(CC) -o $@ $^
+	$(CC) $(SANITIZE) -o $@ $^
 
 all: $(NAME)
 

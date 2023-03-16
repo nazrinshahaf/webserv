@@ -94,11 +94,11 @@ ServerConfig::find_location_directive(const string &path) const
 	ServerLocationDirectiveConfig *location;
 	for (ServerConfig::cit_t location_block = range.first; location_block != range.second; location_block++)
 	{
-		location = dynamic_cast<ServerLocationDirectiveConfig*>(range.first->second);
+		location = dynamic_cast<ServerLocationDirectiveConfig*>(location_block->second);
 		if (location->get_path() == path)
-			break;
+			return (*location);
 	}
-	return (*location);
+	throw ConfigException("Location block doesnt exist");
 }
 
 /*

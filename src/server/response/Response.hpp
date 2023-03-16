@@ -26,11 +26,26 @@ namespace webserv
         ServerConfig                    _serverConfig;
         string							_root_path;
         int                             _client_fd;
+		string							_entireHeader;
+		string							_entireBody;
         string							_entireText;
         bool							_hasText;
+		int								_error_code;
 
-        void	readFile(void);
+		void	handle_default_block(void);
+		void	handle_location_block(void);
+
 		string	handle_auto_index(const string &path);
+
+		void	read_file(const string &path);
+		void	build_header(void);
+
+		string	get_true_root(const ServerLocationDirectiveConfig::map_type &location_block_config) const;
+		string	get_true_index(const ServerLocationDirectiveConfig::map_type &location_block_config) const;
+
+		int		is_location_block(void) const;
+		int		is_autoindex(void) const;
+
     public:
         Response();
         Response(const Request &req, ListeningSocket &server, const int &client_fd);
