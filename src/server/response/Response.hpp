@@ -11,6 +11,8 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <exception>
+#include "../../socket/ListeningSocket.hpp"
+#include "../../config/ServerConfig.hpp"
 
 using std::string;
 
@@ -20,8 +22,10 @@ namespace webserv
     {
     private:
         Request							_req;
+        ListeningSocket                 _server;
+        ServerConfig                    _serverConfig;
         string							_root_path;
-        std::map<int, string>::iterator _it;
+        int                             _client_fd;
         string							_entireText;
         bool							_hasText;
 
@@ -29,7 +33,7 @@ namespace webserv
 		string	handle_auto_index(const string &path);
     public:
         Response();
-        Response(const Request &req, const string &root_path, std::map<int, string>::iterator &it);
+        Response(const Request &req, ListeningSocket &server, const int &client_fd);
         ~Response();
 
         void respond(void);

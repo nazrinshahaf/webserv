@@ -149,20 +149,8 @@ int	Server::receiver(const int &client_fd)
 int		Server::responder(ListeningSocket &server, int &client_fd)
 {
 	Request	req = _requests.find(client_fd)->second;
-	string root_path;
 	const char *temp_message = "HTTP/1.1 500 FUCK OFF\r\nContent-Type: text/html\r\nContent-Length: 119\r\n\r\n";
 
-	try //try to find root path (this should be in responder)
-	{
-		root_path = server.get_config().find_normal_directive("root").get_value();
-	}
-	catch (std::exception &e)
-	{
-		Log(WARN, string(e.what()), 2, server.get_config());
-		root_path = "/";
-	}
-
-	 //this should be in responder
 	if (req.bad_request())
 	{
 		Log(DEBUG, string(RED) + "BAD REQUEST RECEIVED: " + string(RESET));
@@ -174,7 +162,7 @@ int		Server::responder(ListeningSocket &server, int &client_fd)
 	if (_responses.find(client_fd) == _responses.end()) // if this request is new
 	{
 		std::map<int, string>::iterator	client = _client_sockets.find(client_fd);
-		Response responder(req, root_path, client);
+		Response responder(req, server, client->first);
 		_responses[client_fd] = responder;
 	}
 	_responses[client_fd].respond();

@@ -31,9 +31,19 @@ Response::Response()
     _hasText = false;
 }
 
-Response::Response(const Request &req, const string &root_path, std::map<int, string>::iterator &it) : 
-	_req(req), _root_path(root_path), _it(it), _hasText(true)
+Response::Response(const Request &req, ListeningSocket &server, const int &client_fd) : 
+	_req(req), _server(server), _client_fd(client_fd), _hasText(true)
 {
+	_serverConfig = server.get_config();
+	try //try to find root path (this should be in responder)
+	{
+		_root_path = _serverConfig.find_normal_directive("root").get_value();
+	}
+	catch (std::exception &e)
+	{
+		Log(WARN, string(e.what()), 2, server.get_config());
+		_root_path = "/";
+	}
     this->readFile();
 }
 
@@ -125,7 +135,7 @@ void Response::respond(void)
         ssize_t total_to_send = _entireText.length();
 		cout << "total to send :" << total_to_send << endl;
 
-		ssize_t sent = send(_it->first, _entireText.c_str(), _entireText.length(), 0);
+		ssize_t sent = send(_client_fd, _entireText.c_str(), _entireText.length(), 0);
 		if (sent == 0)
 			cout << "SENT IS 0" << endl;
 		if (sent == -1)
