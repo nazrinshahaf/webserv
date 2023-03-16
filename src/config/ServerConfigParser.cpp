@@ -393,7 +393,11 @@ string	ServerConfigParser::extract_value(const string &line, int look_for_bracke
 
 	//Value has to be on same line as key
 	if (look_for_bracket == 0)
+	{
 		value = skip_spaces_and_key.substr(skip_spaces_and_key.find_first_not_of("\t "));
+		//trim spaces after end of value
+		value = value.substr(0, value.find_last_not_of("\t \n") + 1);
+	}
 	else
 	{
 		//Look for bracket
@@ -402,9 +406,9 @@ string	ServerConfigParser::extract_value(const string &line, int look_for_bracke
 		value = value.substr(0, value.find_last_not_of("\t ") + 1);
 	}
 
-	//cout << "----------------" << endl;
-	//cout << "value = [" << value << "]" << endl;
-	//cout << "----------------" << endl;
+	/* cout << "----------------" << endl; */
+	/* cout << "value = [" << value << "]" << endl; */
+	/* cout << "----------------" << endl; */
 
 	return (value);
 }
