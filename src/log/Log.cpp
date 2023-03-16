@@ -38,29 +38,31 @@ void	Log::print_debug_level(const log_level &level, const int &log_to_file, std:
 {
 	switch (level)
 	{
-		case 0:
+		case DEBUG:
 			if (log_to_file != 1 && level >= _base_log_level)
 				cout << GREEN "[DEBUG]\t" RESET;
 			if (log_to_file >= 1 && level >= file_log_level)
 				log_file << "[DEBUG]\t";
 			break;
-		case 1:
+		case INFO:
 			if (log_to_file != 1 && level >= _base_log_level)
 				cout << BLUE "[INFO]\t" RESET;
 			if (log_to_file >= 1 && level >= file_log_level)
 				log_file << "[INFO]\t";
 			break;
-		case 2:
+		case WARN:
 			if (log_to_file != 1 && level >= _base_log_level)
 				cout << YELLOW "[WARN]\t" RESET;
 			if (log_to_file >= 1 && level >= file_log_level)
 				log_file << "[WARN]\t";
 			break;
-		case 3:
+		case ERROR:
 			if (log_to_file != 1 && level >= _base_log_level)
 				cout << RED "[ERROR]\t" RESET;
 			if (log_to_file >= 1 && level >= file_log_level)
 				log_file << "[ERROR]\t";
+			break;
+		case NONE:
 			break;
 		break;
 	}
@@ -74,27 +76,36 @@ void	Log::print_error_msg(const int &log_to_file, std::fstream &log_file, const 
 			cout << "Error " << std::setw(8) << ": " << log_msg << endl;
 			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
 			print_time(cout);
-			cout << "At line " << std::setw(6)<< ": " << std::to_string(__LINE__) << endl;
+			cout << "At line " << std::setw(6)<< ": " << std::to_string(_err_line) << endl;
 			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
 			print_time(cout);
-			cout << "In function : " << __PRETTY_FUNCTION__ << endl;
+			cout << "In function : " << _err_func << endl;
+			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
+			print_time(cout);
+			cout << "In file " << std::setw(6) << ": " << _err_file << endl;
 		case 1 :
 			log_file << "Error " << std::setw(8) << ": " << log_msg << endl;
 			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
 			print_time(log_file);
-			log_file << "At line " << std::setw(6)<< ": " << std::to_string(__LINE__) << endl;
+			log_file << "At line " << std::setw(6)<< ": " << std::to_string(_err_line) << endl;
 			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
 			print_time(log_file);
-			log_file << "In function : " << __PRETTY_FUNCTION__ << endl;
+			log_file << "In function : " << _err_func << endl;
+			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
+			print_time(log_file);
+			log_file << "In file " << std::setw(6) << ": " << _err_file << endl;
 			break ;
 		case 0 :
 			cout << "Error " << std::setw(8) << ": " << log_msg << endl;
 			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
 			print_time(cout);
-			cout << "At line " << std::setw(6)<< ": " << std::to_string(__LINE__) << endl;
+			cout << "At line " << std::setw(6) << ": " << std::to_string(_err_line) << endl;
 			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
 			print_time(cout);
-			cout << "In function : " << __PRETTY_FUNCTION__ << endl;
+			cout << "In function : " << _err_func << endl;
+			print_debug_level(ERROR, log_to_file, log_file, file_log_level);
+			print_time(cout);
+			cout << "In file " << std::setw(6) << ": " << _err_file << endl;
 	}
 }
 
@@ -124,7 +135,7 @@ void	Log::print_debug_msg(const log_level &level, const int &log_to_file, std::f
 				else
 					cout << log_line << endl;
 			case 1 : 
-				if (file_log_level < _base_log_level)
+				if (level < file_log_level)
 					break;
 				print_time(log_file);
 				if (level == ERROR)
@@ -147,11 +158,20 @@ void	Log::print_debug_msg(const log_level &level, const int &log_to_file, std::f
 	}
 }
 
-Log::Log(const log_level &level, const string &log_msg, const int &log_to_file, ServerConfig const &server)
+/*
+ * This should not take in a server but a fd instead.
+ * */
+
+Log::Log(const log_level &level, const string &log_msg,
+		const int &LINE, const char *FUNC, const char *FILE,
+		const int &log_to_file, ServerConfig const &server) :
+			_err_line(LINE), _err_func(FUNC), _err_file(FILE)
 {
 	log_level		file_log_level;
 	std::fstream	log_file;
 
+	if (_base_log_level == NONE)
+		return ;
 	if (log_to_file >= 1) //opening file if log_to_file is set to 1 or 2
 	{
 		pair<ServerConfig::cit_t, ServerConfig::cit_t> pair = server.find_values("error_log");
@@ -160,7 +180,7 @@ Log::Log(const log_level &level, const string &log_msg, const int &log_to_file, 
 		log_file.open(nd.get_value(), std::ios::app); //append mode
 		if (!log_file)
 		{
-			Log(ERROR, "Cant write to " + nd.get_value()); //file permisions can prob just continue on
+			Log(ERROR, "Cant write to " + nd.get_value(), __LINE__, __PRETTY_FUNCTION__, __FILE__); //file permisions can prob just continue on
 			return;
 		}
 		string	temp_log_level = nd.get_value2();

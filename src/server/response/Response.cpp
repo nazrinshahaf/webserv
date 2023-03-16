@@ -70,7 +70,7 @@ void Response::readFile(void)
 		{
 			if (dir_stat.st_mode & S_IFDIR) //if dir
 			{
-				Log(ERROR, "FILE IS A DIRECTORY");
+				Log(ERROR, "FILE IS A DIRECTORY", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 				myfile.open("public/404.html", std::ios::binary);
 			}
 			else //if not dir

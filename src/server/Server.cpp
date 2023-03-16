@@ -63,7 +63,7 @@ Server::Server(const ServerConfigParser &config) : _config(config)
 			/* _server_sockets.push_back(ListeningSocket(AF_INET, SOCK_STREAM, 0, std::stoi(nd.get_value()), INADDR_ANY, 10, server_config)); */
 			/* _server_sockets.insert(std::make_pair(fd, ListeningSocket(AF_INET, SOCK_STREAM, 0, std::stoi(nd.get_value()), INADDR_ANY, 10, server_config))); */
 			add_socket(server_config, nd);
-			Log(INFO, string("Server open at port ") + nd.get_value(), 2, server_config);
+			Log(INFO, string("Server open at port ") + nd.get_value(), 0, NULL, NULL, 2, server_config);
 		}
 	}
 	//cout << _config << endl;
@@ -98,8 +98,10 @@ void	Server::acceptor(ListeningSocket &server)
 	new_socket_fd = server.accept_connections();
 	if (new_socket_fd >= 0)
 	{
-		Log(DEBUG, string("Client open with fd : ") + to_string(new_socket_fd), 2, server.get_config());
-		Log(INFO, "Client connected with ip : " + server.get_client_ip(), 2, server.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
+		Log(DEBUG, string("Client open with fd : ") + to_string(new_socket_fd),
+				__LINE__, __FILE__, __PRETTY_FUNCTION__, 2, server.get_config());
+		Log(INFO, "Client connected with ip : " + server.get_client_ip(),
+				__LINE__, __FILE__, __PRETTY_FUNCTION__, 2, server.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
 		_client_sockets[new_socket_fd] = string("");
 
 		struct pollfd client_fd_to_insert;
@@ -157,7 +159,7 @@ int		Server::responder(ListeningSocket &server, int &client_fd)
 	}
 	catch (std::exception &e)
 	{
-		Log(WARN, string(e.what()), 2, server.get_config());
+		Log(WARN, string(e.what()), 0, NULL, NULL, 2, server.get_config());
 		root_path = "/";
 	}
 
@@ -166,7 +168,7 @@ int		Server::responder(ListeningSocket &server, int &client_fd)
 	{
 		Log(DEBUG, string(RED) + "BAD REQUEST RECEIVED: " + string(RESET));
 		send(client_fd , temp_message , strlen(temp_message), MSG_OOB);
-		Log(DEBUG, (string("Client socket closed with fd ") + to_string(client_fd)), 2, server.get_config());
+		Log(DEBUG, (string("Client socket closed with fd ") + to_string(client_fd)), 0, NULL, NULL, 2, server.get_config());
 		return (1); //full bad reqquest response
 	}
 
@@ -210,7 +212,7 @@ void	Server::launch()
 		int poll_rv = poll(_poll_fds.data(), _poll_fds.size(), 1000);
 		if (poll_rv < 0)
 		{
-			Log(ERROR, "Poll failed ");
+			Log(ERROR, "Poll failed ", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 			return ;
 		}
 		for (size_t i = 0; i < _poll_fds.size(); i++)
@@ -239,7 +241,7 @@ void	Server::launch()
 			{
 				if (curr_poll->revents != POLLIN) //if server is not POLLIN fatal error
 				{
-					Log(ERROR, "Server no longer on POLLIN");
+					Log(ERROR, "Server no longer on POLLIN", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 					break ;
 				}
 				else if (curr_poll->revents & POLLIN) //if pollfd is a server and revents is triggered
