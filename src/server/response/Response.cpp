@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <sstream>
+#include "../../Utils.cpp"
 
 #define _XOPEN_SOURCE 700 //for autoindex
 #define _GNU_SOURCE //for checking audoindex file type
@@ -30,9 +31,19 @@ Response::Response()
     _hasText = false;
 }
 
-Response::Response(const Request &req, const string &root_path, std::map<int, string>::iterator &it) : 
-	_req(req), _root_path(root_path), _it(it), _hasText(true)
+Response::Response(const Request &req, ListeningSocket &server, const int &client_fd) : 
+	_req(req), _server(server), _client_fd(client_fd), _hasText(true)
 {
+	_serverConfig = server.get_config();
+	try //try to find root path (this should be in responder)
+	{
+		_root_path = _serverConfig.find_normal_directive("root").get_value();
+	}
+	catch (std::exception &e)
+	{
+		Log(WARN, string(e.what()), 0, NULL, NULL, 2, server.get_config());
+		_root_path = "/";
+	}
     this->readFile();
 }
 
@@ -47,18 +58,21 @@ void Response::readFile(void)
 {
     const char *header = "HTTP/1.1 200 OK\nContent-Type: */*\n\n"; // Dynamically add content length TODO
     const char *header2 = "HTTP/1.1 200 OK\r\nContent-Type: image/*\r\n\r\n";
+    const char *header3 = "HTTP/1.1 200 OK\r\nContent-Type: video/mp4\r\n\r\n";
     const char *header_404 = "HTTP/1.1 404 Not Found\nContent-Type: text/html\n\n";
 
     std::ifstream myfile;
 
 	string	header_and_text;
 	string	full_path = _root_path + _req.path();
+	utils::replaceAll(full_path, "%20", " ");
 
+	cout << "full path = " << full_path << endl;
 	if (_req.path() == "/")
 	{
 		myfile.open(_root_path + "/index.html", std::ios::binary);
 	}
-	else if (_req.path() == "/autoindex")
+	else if (_req.path() == "/autoindex") //reemove hard code later
 	{
 		_entireText += header;
 		_entireText += handle_auto_index(_root_path);
@@ -74,8 +88,10 @@ void Response::readFile(void)
 				myfile.open("public/404.html", std::ios::binary);
 			}
 			else //if not dir
-				myfile.open(_root_path + _req.path(), std::ios::binary);
+				myfile.open(full_path, std::ios::binary);
 		}
+		else
+			Log(ERROR, "CANNOT OPEN DIR");
 	}
 
     if (!myfile)
@@ -85,12 +101,10 @@ void Response::readFile(void)
     }
     else
     {
-        if (_req.path().find(".jpg") != string::npos || _req.path().find(".png") != string::npos)
-		{
+        if (full_path.find(".jpg") != string::npos || full_path.find(".png") != string::npos)
             _entireText += header2;
-			/* header_and_text = header2; */
-			/* header_and_text += "Transfer-Encoding: chunked\r\n\r\n"; */
-		}
+        else if (full_path.find(".mp4") != string::npos)
+            _entireText += header3;
         else
             _entireText += header;
     }
@@ -124,7 +138,7 @@ void Response::respond(void)
         ssize_t total_to_send = _entireText.length();
 		cout << "total to send :" << total_to_send << endl;
 
-		ssize_t sent = send(_it->first, _entireText.c_str(), _entireText.length(), 0);
+		ssize_t sent = send(_client_fd, _entireText.c_str(), _entireText.length(), 0);
 		if (sent == 0)
 			cout << "SENT IS 0" << endl;
 		if (sent == -1)
