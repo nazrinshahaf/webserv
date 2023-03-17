@@ -54,13 +54,13 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 	{
 		string full_path = get_full_path();
 
-		Log(WARN, "Auto index = " + std::to_string(is_autoindex()));
+		/* Log(WARN, "Auto index = " + std::to_string(is_autoindex())); */
 		struct stat	path;
 		stat(full_path.c_str(), &path);
 
 		if (is_autoindex() && !S_ISREG(path.st_mode))
 		{
-			cout << "full path before autoindex : " << full_path << endl;
+			/* cout << "full path before autoindex : " << full_path << endl; */
 			_entireBody = handle_auto_index(full_path);
 		}
 		else
@@ -69,6 +69,7 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 			build_error_body();
 		build_header();
 		_entireText = _entireHeader + _entireBody;
+		cout << _entireText << endl;
 	}
 }
 
@@ -82,14 +83,25 @@ string	Response::get_full_path(void)
 	string	full_path;
 	string	location_path = get_location_path();
 
-	Log(DEBUG, "Location path : " + location_path);
-	Log(DEBUG, "url_path : " + _req.path());
+	string	is_url_file = _root_path + _req.path();
+	struct stat	dir_stat;
+	/* cout << "CHEKC IF FILE IS ACTUAL :" << is_url_file<< endl; */
+	if (stat(is_url_file.c_str(), &dir_stat) == 0) //if successfully stat
+	{
+		if (dir_stat.st_mode & S_IFREG) //if file and not dir
+			return (is_url_file);
+		else
+			Log(WARN, "FILE IS DIR");
+	}
+
+	/* Log(DEBUG, "Location path : " + location_path); */
+	/* Log(DEBUG, "url_path : " + _req.path()); */
 	if (_req.path() == "/" || _req.path() == "")
 	{
 		full_path = _serverConfig.find_normal_directive("root").get_value();
-		Log(WARN, "full_path in get_full_path :" + full_path);
-		if (is_autoindex())
-			return full_path;
+		Log(WARN, "true root in / : " + full_path);
+		/* if (is_autoindex()) */
+		/* 	return full_path; */
 		full_path += "/" + _serverConfig.find_normal_directive("index").get_value();
 	}
 	else if (location_path != "")
@@ -97,29 +109,42 @@ string	Response::get_full_path(void)
 		try {
 			ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
 			ServerLocationDirectiveConfig::map_type	location_block_config = location_block.get_config();
-			Log(DEBUG, "URL path is a location");
+			/* Log(DEBUG, "URL path is a location"); */
 
-			full_path = get_true_root(location_block_config);
-			Log(WARN, "get true root : " + full_path);
-			if (is_autoindex()) //if autoindex
-			{
-				if (_req.path().back() == '/')
-					full_path.append(_req.path().substr(location_path.length() + 1));
-				else
-					full_path.append(_req.path().substr(location_path.length()));
-				Log(WARN, "full path if autoindex : " + full_path);
-				return full_path;
-			}
-			full_path += "/" + get_true_index(location_block_config);
-			Log(DEBUG, "full_path : " + full_path);
+			full_path = _req.path();
+			string true_root = get_true_root(location_block_config);
+			/* cout << full_path << endl; */
+			/* cout << location_path << endl; */
+			if (true_root.back() == '/')
+				true_root.pop_back();
+			/* cout << true_root << endl; */
+			utils::replaceAll(full_path, location_path, true_root);
+			/* cout << "full_path : " << full_path << endl; */
+
+			//full_path = get_true_root(location_block_config);
+			//Log(WARN, "get true root in location: " + full_path);
+			//if (location_path == _req.path())
+			//	return (full_path);
+			///* if (is_autoindex()) //if autoindex */
+			///* { */
+			///* 	if (_req.path().back() == '/') */
+			///* 		full_path.append(_req.path().substr(location_path.length() + 1)); */
+			///* 	else */
+			///* 		full_path.append(_req.path().substr(location_path.length())); */
+			///* 	Log(WARN, "full path if autoindex : " + full_path); */
+			///* 	return full_path; */
+			///* } */
+			//full_path += "/" + get_true_index(location_block_config);
+			//Log(DEBUG, "full_path : " + full_path);
 			/* read_file(full_path); */
 		} catch (BaseConfig::ConfigException &e) { //no location just search root directory
-			Log(DEBUG, "URL path is not location");
+			Log(ERROR, "URL path is not location (i dont think the error should show up here)", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 		}
 	}
 	else
 	{
 		full_path += _serverConfig.find_normal_directive("root").get_value();
+		Log(WARN, "true root in defualt : " + full_path);
 		full_path += _req.path();
 		/* read_file(full_path); */
 	}
@@ -276,8 +301,6 @@ int		Response::is_autoindex(void) const
 
 void	Response::build_header(void)
 {
-    //const char *header = "HTTP/1.1 200 OK\nContent-Type: */*\n\n"; // Dynamically add content length TODO
-
 	_entireHeader = "HTTP/1.1 ";
 	if (_error_code)
 	{
@@ -318,7 +341,6 @@ void Response::build_error_body()
 		Log(ERROR, "Error page not found:", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 		return;
 	}
-
 }
 
 
@@ -335,13 +357,13 @@ void Response::read_file(const string &path) //change name later
 	{
 		if (dir_stat.st_mode & S_IFDIR) //if dir
 		{
-			Log(ERROR, "File is a directory change error code later", __LINE__, __PRETTY_FUNCTION__, __FILE__);
-			_error_code = 404;
+			Log(ERROR, "File is a directory", __LINE__, __PRETTY_FUNCTION__, __FILE__);
+			_error_code = 403;
 			/* file.open("public/404.html", std::ios::binary); */
 		}
 		else //if not dir
 		{
-			Log(DEBUG, "File opened");
+			Log(DEBUG, "File " + path_no_spaces + " opened");
 			file.open(path_no_spaces, std::ios::binary);
 		}
 	}
@@ -399,8 +421,9 @@ bool Response::hasText(void) { return (_hasText); }
 
 static string	auto_index_apply_syle(void)
 {
-	return (" html { min-height: 100%; text-align: center; display: flex; justify-content: center; flex-direction: column; } body { font-family: Arial, sans-serif; margin: 0; padding: 0; text-align: center; min-height: 100%; } h1 { text-align: center; } table { border: none; border-bottom: 1px solid black; border-collapse: collapse; margin: 0 auto; width: 600px; } thead { border-bottom: 1px solid black; } th, td { /* border: 1px solid black; */ padding: 10px; text-align: left; } td a { font-weight: 600; }");
+	//return (" html { min-height: 100%; text-align: center; display: flex; justify-content: center; flex-direction: column; } body { font-family: Arial, sans-serif; margin: 0; padding: 0; text-align: center; min-height: 100%; } h1 { text-align: center; } table { border: none; border-bottom: 1px solid black; border-collapse: collapse; margin: 0 auto; width: 600px; } thead { border-bottom: 1px solid black; } th, td { /* border: 1px solid black; */ padding: 10px; text-align: left; } td a { font-weight: 600; }");
 	/* return("<link rel=\"stylesheet\" href=\"https://drive.google.com/uc?export=view&id=1ZCGfFPqxAPPh66miEdAjFlYmeC8krMjc\">"); */
+	return("<link rel=\"stylesheet\" href=\"/style/autoindex.css\">");
 }
 
 static string		auto_index_create_header(const string &path)
@@ -428,8 +451,8 @@ static string		auto_index_create_html(const int &type, const string &path = stri
 		header += "<!DOCTYPE html>";
 		header += "<html>";
 		header += "<head>";
-		header += "<style>" + auto_index_apply_syle() + "</style>";
-		/* header += auto_index_apply_syle(); */
+		/* header += "<style>" + auto_index_apply_syle() + "</style>"; */
+		header += auto_index_apply_syle();
 		header += "</head>";
 		header += "<body>";
 		header += auto_index_create_header(path);
@@ -506,11 +529,10 @@ std::string	Response::handle_auto_index(string &path)
 	string						url_path = _req.path();
 	std::multimap<int, string>	sorted_mmap;
 
-	Log(WARN, "Path in autoindex : " + path);
+	/* Log(WARN, "Path in autoindex : " + path); */
 	if (url_path.back() != '/')
 		url_path.push_back('/');
-	Log(WARN, "Path in autoindex after pop : " + path);
-	auto_index_html += auto_index_create_html(0, path);
+	/* Log(WARN, "Path in autoindex after pop : " + path); */
 	directory = opendir(path.c_str());
 	if (directory != NULL)
 	{
@@ -522,7 +544,13 @@ std::string	Response::handle_auto_index(string &path)
 		(void)closedir(directory);
 	}
 	else
+	{
 		Log(ERROR, "Couldn't open directory", __LINE__, __PRETTY_FUNCTION__, __FILE__);
+		_error_code = 404;
+		return "";
+	}
+
+	auto_index_html += auto_index_create_html(0, path);
 	for (std::multimap<int,string>::iterator it = sorted_mmap.begin(); it != sorted_mmap.end(); it++) {
 		auto_index_html += auto_index_create_file(path, it->first, it->second, url_path);
 	}
