@@ -18,6 +18,10 @@
             <li><a href="/cgi">Make a CGI request</a></li>
             <li><a href="/cgi/users">Make a CGI request with a path</a></li>
             <li><a href="/cgi/users?campus=15&is_active=true">Make a CGI request with a path and query string</a></li>
+            <form method="post" enctype="multipart/form-data" action="/cgi">
+                <input type="text" id="sometest" name="filename">
+                <input type="submit" value="Upload" name="submit">
+            </form>
         </ul>
     </h3>
 </body>

@@ -17,6 +17,7 @@
 #include <signal.h>
 #include <sstream>
 #include <unistd.h>
+#include <cstdio>
 
 #include <poll.h>
 #include <stdbool.h>
@@ -125,31 +126,33 @@ string Response::processCgi(void)
 
 		dprintf(2, "in child\n");
 
-		int file;
-		dprintf(2, "req path is %s\n", _req.path().c_str());
 		string query_string, path_info;
 
 		query_string = find_query_string();
 		path_info = find_path_info();
-		char	**new_envp = create_new_envp(query_string, path_info, _envp);
-		dprintf(2, "\t\t-----\n");
-		for (char **e = new_envp; *e != 0; e++)
+
+		int file;
+		if (_req.type() == "POST")
 		{
-			dprintf(2, "%s\n", *e);
+			file = open((string("body") + std::to_string(_req.socket())).c_str(), O_RDWR);
+			write(file, _req.body().c_str(), _req.body().length());
+			dup2(file, STDIN_FILENO);
+			close(file);
 		}
-		dprintf(2, "\t\t-----\n");
-		file = open("test.txt", O_RDONLY);
-		dup2(file, STDIN_FILENO);
-		close(file);
+
+		
+		
 		dup2(fd[1], STDOUT_FILENO);
 		close(fd[1]);
 		close(fd[0]);
-		execve("/usr/local/bin/python3", commands.data(), new_envp);
+		execve("/usr/local/bin/python3", commands.data(), create_new_envp(query_string, path_info, _envp));
 		exit(1);
 	}
 	else if (i > 0) //parent
 	{
 		dprintf(2, "parent waiting\n");
+		if (_req.type() == "POST")
+			std::remove((string("body") + std::to_string(_req.socket())).c_str());
 		close(fd[1]);
 		dprintf(2, "WRITE END IS OPEN %d\n", (fd_is_valid(fd[1])));
 		waitpid(i, NULL, 0);
