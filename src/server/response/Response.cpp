@@ -1,9 +1,12 @@
 #include "Response.hpp"
 #include "../../log/Log.hpp"
+#include <cstdio>
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <string>
+#include <sys/_types/_s_ifmt.h>
 #include <sys/_types/_size_t.h>
 #include <sys/_types/_ssize_t.h>
 #include <sys/dirent.h>
@@ -43,33 +46,84 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 		build_error_body();
 		build_header();
 		_entireText = _entireHeader + _entireBody;
-		Log(DEBUG, std::to_string(_req.done()));
+		/* Log(DEBUG, std::to_string(_req.done())); */
 		return;
 	}
 
-    /* this->readFile(); */
 	if (_req.type() == "GET")
 	{
-		if (is_location_block() == 1)
-			handle_location_block();
-		else
+		string full_path = get_full_path();
+
+		Log(WARN, "Auto index = " + std::to_string(is_autoindex()));
+		struct stat	path;
+		stat(full_path.c_str(), &path);
+
+		if (is_autoindex() && !S_ISREG(path.st_mode))
 		{
-			handle_default_block();
-			if (_error_code != 0)
-				build_error_body();
+			cout << "full path before autoindex : " << full_path << endl;
+			_entireBody = handle_auto_index(full_path);
 		}
+		else
+			read_file(full_path);
+		if (_error_code != 0)
+			build_error_body();
 		build_header();
 		_entireText = _entireHeader + _entireBody;
-		cout << _entireText << endl;
-	}
-	else if (_req.type() == "POST")
-	{
 	}
 }
 
 Response::~Response()
 {
     
+}
+
+string	Response::get_full_path(void)
+{
+	string	full_path;
+	string	location_path = get_location_path();
+
+	Log(DEBUG, "Location path : " + location_path);
+	Log(DEBUG, "url_path : " + _req.path());
+	if (_req.path() == "/" || _req.path() == "")
+	{
+		full_path = _serverConfig.find_normal_directive("root").get_value();
+		Log(WARN, "full_path in get_full_path :" + full_path);
+		if (is_autoindex())
+			return full_path;
+		full_path += "/" + _serverConfig.find_normal_directive("index").get_value();
+	}
+	else if (location_path != "")
+	{
+		try {
+			ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
+			ServerLocationDirectiveConfig::map_type	location_block_config = location_block.get_config();
+			Log(DEBUG, "URL path is a location");
+
+			full_path = get_true_root(location_block_config);
+			Log(WARN, "get true root : " + full_path);
+			if (is_autoindex()) //if autoindex
+			{
+				if (_req.path().back() == '/')
+					full_path.append(_req.path().substr(location_path.length() + 1));
+				else
+					full_path.append(_req.path().substr(location_path.length()));
+				Log(WARN, "full path if autoindex : " + full_path);
+				return full_path;
+			}
+			full_path += "/" + get_true_index(location_block_config);
+			Log(DEBUG, "full_path : " + full_path);
+			/* read_file(full_path); */
+		} catch (BaseConfig::ConfigException &e) { //no location just search root directory
+			Log(DEBUG, "URL path is not location");
+		}
+	}
+	else
+	{
+		full_path += _serverConfig.find_normal_directive("root").get_value();
+		full_path += _req.path();
+		/* read_file(full_path); */
+	}
+	return (full_path);
 }
 
 string	Response::get_true_root(const ServerLocationDirectiveConfig::map_type &location_block_config) const
@@ -94,75 +148,131 @@ string	Response::get_true_index(const ServerLocationDirectiveConfig::map_type &l
 	return (true_index);
 }
 
-int		Response::is_location_block(void) const
+string	Response::get_location_path(void) const
 {
-	try {
-		ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(_req.path());
-		return (1);
-	} catch (BaseConfig::ConfigException &e) {
-		return (0);
+	pair<ServerConfig::cit_t, ServerConfig::cit_t> range = _serverConfig.find_values("location");
+
+	string longest_match;
+	for (ServerConfig::cit_t locations = range.first; locations != range.second; locations++)
+	{
+		ServerLocationDirectiveConfig l = dynamic_cast<ServerLocationDirectiveConfig&>(*locations->second);
+
+		string path = l.get_path();
+		if (_req.path().find(path) == 0)
+			if (path.length() > longest_match.length())
+				longest_match = path;
 	}
+
+	//struct stat	dir_stat;
+
+	//cout << "_req.path() :" << _req.path().c_str() << endl;
+	//string full_path = _root_path + _req.path();
+	//cout << "full_path = " << full_path << endl;
+	//if (stat(full_path.c_str(), &dir_stat) == 0) //if successfully stat
+	//{
+	//	if (dir_stat.st_mode & S_IFDIR) //if file and not dir
+	//	{
+	//		Log(WARN, "File is dir");
+	//	}
+	//	else
+	//	{
+	//		Log(WARN, "FIle is not dir");
+	//		return (string());
+	//	}
+	//}
+	//else
+	//{
+	//	cout << std::strerror(errno) << endl;
+	//	/* Log(ERROR, "BAD ERROR"); */
+	//}
+	//Log(WARN, "longest_match = " + longest_match);
+	return (longest_match);
 }
+
+/* int		Response::is_location_block(void) const */
+/* { */
+/* 	pair<ServerConfig::cit_t, ServerConfig::cit_t> range = _serverConfig.find_values("location"); */
+/*  */
+/* 	string longest_match; */
+/* 	for (ServerConfig::cit_t locations = range.first; locations != range.second; locations++) */
+/* 	{ */
+/* 		ServerLocationDirectiveConfig l = dynamic_cast<ServerLocationDirectiveConfig&>(*locations->second); */
+/*  */
+/* 		string path = l.get_path(); */
+/* 		if (_req.path().find(path) == 0) */
+/* 			if (path.length() > longest_match.length()) */
+/* 				longest_match = path; */
+/* 	} */
+/* 	if (longest_match.length() > 0) */
+/* 		return 1; */
+/* 	return (0); */
+/* } */
 
 int		Response::is_autoindex(void) const
 {
-	try {
-		ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(_req.path());
-
-		if (location_block.get_config().find("autoindex") == location_block.get_config().end())
+	string location_path = get_location_path();
+	if (location_path == "")
+	{
+		try {
+			_serverConfig.find_normal_directive("autoindex");
+			return (1);
+		} catch (BaseConfig::ConfigException &e) {
 			return (0);
-		return (1);
-	} catch (BaseConfig::ConfigException &e) {
-		return (0);
-	}
-}
-
-void	Response::handle_location_block(void)
-{
-	string	full_path = _root_path + _req.path();
-
-	utils::replaceAll(full_path, "%20", " ");
-
-	cout << "full path = " << full_path << endl;
-	Log(DEBUG, "Path = " + _req.path());
-	Log(DEBUG, "Full path = " + full_path);
-
-	//if req path is default
-	if (_req.path() == "/")
-		cout << "Server Default" << endl;
-
-	//check if req path is a location block.
-	try {
-		ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(_req.path());
-		ServerLocationDirectiveConfig::map_type	location_block_config = location_block.get_config();
-		Log(DEBUG, "URL path is a location");
-
-		full_path = get_true_root(location_block_config) + "/";
-		if (is_autoindex() == 1) //if autoindex
-		{
-			_entireBody += handle_auto_index(full_path);
-			return ;
 		}
-		Log(WARN, "full_path : " + full_path);
-		full_path += get_true_index(location_block_config);
-		Log(WARN, "full_path : " + full_path);
-		read_file(full_path);
-	} catch (BaseConfig::ConfigException &e) { //no location just search root directory
-		Log(DEBUG, "URL path is not location");
+	}
+	else
+	{
+		try {
+			ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
+
+			if (location_block.get_config().find("autoindex") == location_block.get_config().end())
+				return (0);
+			return (1);
+		} catch (BaseConfig::ConfigException &e) {
+			return (0);
+		}
 	}
 }
 
-void	Response::handle_default_block(void)
-{
-	string	full_path;
-
-	full_path += _serverConfig.find_normal_directive("root").get_value();
-	if (_req.path() == "/" || _req.path() == "")
-		full_path += "/" + _serverConfig.find_normal_directive("index").get_value();
-	else
-		full_path += _req.path();
-	read_file(full_path);
-}
+/* void	Response::handle_location_block(void) */
+/* { */
+/* 	string	full_path; */
+/* 	//if req path is default */
+/* 	if (_req.path() == "/") */
+/* 		cout << "Server Default" << endl; */
+/*  */
+/* 	//check if req path is a location block. */
+/* 	try { */
+/* 		ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(_req.path()); */
+/* 		ServerLocationDirectiveConfig::map_type	location_block_config = location_block.get_config(); */
+/* 		Log(DEBUG, "URL path is a location"); */
+/*  */
+/* 		full_path = get_true_root(location_block_config) + "/"; */
+/* 		if (is_autoindex() == 1) //if autoindex */
+/* 		{ */
+/* 			_entireBody += handle_auto_index(full_path); */
+/* 			return ; */
+/* 		} */
+/* 		Log(WARN, "full_path : " + full_path); */
+/* 		full_path += get_true_index(location_block_config); */
+/* 		Log(WARN, "full_path : " + full_path); */
+/* 		read_file(full_path); */
+/* 	} catch (BaseConfig::ConfigException &e) { //no location just search root directory */
+/* 		Log(DEBUG, "URL path is not location"); */
+/* 	} */
+/* } */
+/*  */
+/* void	Response::handle_default_block(void) */
+/* { */
+/* 	string	full_path; */
+/*  */
+/* 	full_path += _serverConfig.find_normal_directive("root").get_value(); */
+/* 	if (_req.path() == "/" || _req.path() == "") */
+/* 		full_path += "/" + _serverConfig.find_normal_directive("index").get_value(); */
+/* 	else */
+/* 		full_path += _req.path(); */
+/* 	read_file(full_path); */
+/* } */
 
 void	Response::build_header(void)
 {
@@ -289,8 +399,8 @@ bool Response::hasText(void) { return (_hasText); }
 
 static string	auto_index_apply_syle(void)
 {
-	//return (" html { min-height: 100%; text-align: center; display: flex; justify-content: center; flex-direction: column; } body { font-family: Arial, sans-serif; margin: 0; padding: 0; text-align: center; min-height: 100%; } h1 { text-align: center; } table { border: none; border-bottom: 1px solid black; border-collapse: collapse; margin: 0 auto; width: 600px; } thead { border-bottom: 1px solid black; } th, td { /* border: 1px solid black; */ padding: 10px; text-align: left; } td a { font-weight: 600; }");
-	return("<link rel=\"stylesheet\" href=\"https://drive.google.com/uc?export=view&id=1ZCGfFPqxAPPh66miEdAjFlYmeC8krMjc\">");
+	return (" html { min-height: 100%; text-align: center; display: flex; justify-content: center; flex-direction: column; } body { font-family: Arial, sans-serif; margin: 0; padding: 0; text-align: center; min-height: 100%; } h1 { text-align: center; } table { border: none; border-bottom: 1px solid black; border-collapse: collapse; margin: 0 auto; width: 600px; } thead { border-bottom: 1px solid black; } th, td { /* border: 1px solid black; */ padding: 10px; text-align: left; } td a { font-weight: 600; }");
+	/* return("<link rel=\"stylesheet\" href=\"https://drive.google.com/uc?export=view&id=1ZCGfFPqxAPPh66miEdAjFlYmeC8krMjc\">"); */
 }
 
 static string		auto_index_create_header(const string &path)
@@ -318,8 +428,8 @@ static string		auto_index_create_html(const int &type, const string &path = stri
 		header += "<!DOCTYPE html>";
 		header += "<html>";
 		header += "<head>";
-		/* header += "<style>" + auto_index_apply_syle() + "</style>"; */
-		header += auto_index_apply_syle();
+		header += "<style>" + auto_index_apply_syle() + "</style>";
+		/* header += auto_index_apply_syle(); */
 		header += "</head>";
 		header += "<body>";
 		header += auto_index_create_header(path);
@@ -363,11 +473,11 @@ static string			auto_index_print_file_size(const string &path, const string &fil
 	return (std::to_string(attr.st_size) + "B");
 }
 
-static string			auto_index_create_file(const string &path, const int &file_type, const string &file_name)
+static string			auto_index_create_file(const string &path, const int &file_type, const string &file_name, const string &url_path)
 {
 	string	file_str;
-	string	full_path = path + "/" + file_name;
-
+	string	full_path = url_path + file_name;
+	Log(DEBUG, "full_path : " + full_path);
 	if (file_type == 1) //everything else (mainly file)
 	{
 		file_str += "<tr>";
@@ -388,14 +498,18 @@ static string			auto_index_create_file(const string &path, const int &file_type,
 	return (file_str);
 }
 
-std::string	Response::handle_auto_index(const string &path)
+std::string	Response::handle_auto_index(string &path)
 {
 	string						auto_index_html;
 	DIR							*directory;
 	struct dirent				*file;     
+	string						url_path = _req.path();
 	std::multimap<int, string>	sorted_mmap;
 
-	cout << path << endl;
+	Log(WARN, "Path in autoindex : " + path);
+	if (url_path.back() != '/')
+		url_path.push_back('/');
+	Log(WARN, "Path in autoindex after pop : " + path);
 	auto_index_html += auto_index_create_html(0, path);
 	directory = opendir(path.c_str());
 	if (directory != NULL)
@@ -408,9 +522,9 @@ std::string	Response::handle_auto_index(const string &path)
 		(void)closedir(directory);
 	}
 	else
-		perror("Couldn't open the directory");
+		Log(ERROR, "Couldn't open directory", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 	for (std::multimap<int,string>::iterator it = sorted_mmap.begin(); it != sorted_mmap.end(); it++) {
-		auto_index_html += auto_index_create_file(path, it->first, it->second);
+		auto_index_html += auto_index_create_file(path, it->first, it->second, url_path);
 	}
 	auto_index_html += auto_index_create_html(1);
 	return (auto_index_html);

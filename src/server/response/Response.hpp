@@ -32,19 +32,21 @@ namespace webserv
         bool							_hasText;
 		int								_error_code;
 
-		void	handle_default_block(void);
-		void	handle_location_block(void);
+		/* void	handle_default_block(void); */
+		/* void	handle_location_block(void); */
 
-		string	handle_auto_index(const string &path);
+		string	handle_auto_index(string &path);
 
 		void	read_file(const string &path);
 		void	build_header(void);
 		void	build_error_body(void);
 
+		string	get_full_path(void);
 		string	get_true_root(const ServerLocationDirectiveConfig::map_type &location_block_config) const;
 		string	get_true_index(const ServerLocationDirectiveConfig::map_type &location_block_config) const;
 
-		int		is_location_block(void) const;
+		/* int		is_location_block(void) const; */
+		string	get_location_path(void) const;
 		int		is_autoindex(void) const;
 
     public:
