@@ -39,6 +39,7 @@ namespace webserv
 
 		void	read_file(const string &path);
 		void	build_header(void);
+		void	build_error_body(void);
 
 		string	get_true_root(const ServerLocationDirectiveConfig::map_type &location_block_config) const;
 		string	get_true_index(const ServerLocationDirectiveConfig::map_type &location_block_config) const;

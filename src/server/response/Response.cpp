@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <sstream>
-#include "../../Utils.cpp"
+#include "../../utils/Utils.hpp"
 
 #define _XOPEN_SOURCE 700 //for autoindex
 #define _GNU_SOURCE //for checking audoindex file type
@@ -31,27 +31,20 @@ Response::Response() : _hasText(false)
 }
 
 Response::Response(const Request &req, ListeningSocket &server, const int &client_fd) : 
-	_req(req), _server(server), _client_fd(client_fd), _hasText(true)
+	_req(req), _server(server), _serverConfig(server.get_config()),
+	_client_fd(client_fd), _entireHeader(""), _entireBody(""), _entireText(""),
+	_hasText(true), _error_code(0)  //change later when req.bad_req is int
 {
+	_root_path = _serverConfig.find_normal_directive("root").get_value(); //change again
 	if (_req.bad_request())
 	{
+		Log(INFO, "Bad Request Recieved");
 		_error_code = 400;
+		build_error_body();
 		build_header();
-		Log(DEBUG, "BAD REQUEST RECEIVED");
-		send(client_fd , _entireHeader.c_str() , _entireHeader.length(), MSG_OOB);
-		_hasText = false;
-	}
-
-	_serverConfig = server.get_config();
-	_error_code = 0;
-	try //try to find root path (this should be in responder)
-	{
-		_root_path = _serverConfig.find_normal_directive("root").get_value();
-	}
-	catch (std::exception &e)
-	{
-		Log(WARN, string(e.what()), 0, NULL, NULL, 2, server.get_config());
-		_root_path = "/";
+		_entireText = _entireHeader + _entireBody;
+		Log(DEBUG, std::to_string(_req.done()));
+		return;
 	}
 
     /* this->readFile(); */
@@ -60,11 +53,16 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 		if (is_location_block() == 1)
 			handle_location_block();
 		else
+		{
 			handle_default_block();
+			if (_error_code != 0)
+				build_error_body();
+		}
 		build_header();
 		_entireText = _entireHeader + _entireBody;
+		cout << _entireText << endl;
 	}
-	if (_req.type() == "POST")
+	else if (_req.type() == "POST")
 	{
 	}
 }
@@ -158,9 +156,9 @@ void	Response::handle_default_block(void)
 {
 	string	full_path;
 
-	full_path += _serverConfig.find_normal_directive("root").get_value() + "/";
-	if (_req.path() == "/")
-		full_path += _serverConfig.find_normal_directive("index").get_value();
+	full_path += _serverConfig.find_normal_directive("root").get_value();
+	if (_req.path() == "/" || _req.path() == "")
+		full_path += "/" + _serverConfig.find_normal_directive("index").get_value();
 	else
 		full_path += _req.path();
 	read_file(full_path);
@@ -186,7 +184,31 @@ void	Response::build_header(void)
 		_entireHeader += "200 OK";
 	_entireHeader += "\r\n";
 	_entireHeader += "Content-Type: */*\r\n";
-	_entireHeader += "Content-Length: " + std::to_string(_entireBody.length()) + "\r\n\r\n";
+	if (_entireBody.length() != 0)
+		_entireHeader += "Content-Length: " + std::to_string(_entireBody.length()) + "\r\n\r\n";
+}
+
+void Response::build_error_body()
+{
+	try {
+		pair<ServerConfig::cit_t, ServerConfig::cit_t> error_pages = _serverConfig.find_values("error_page");
+		for (ServerConfig::cit_t error_page = error_pages.first; error_page != error_pages.second; error_page++)
+		{
+			ServerNormalDirectiveConfig err_p = dynamic_cast<ServerNormalDirectiveConfig&>(*error_page->second);
+
+			if (std::stoi(err_p.get_value()) == _error_code)
+			{
+				int save_err_code = _error_code;
+				Log(DEBUG, "Same error code");
+				read_file(_root_path + "/" + err_p.get_value2());
+				_error_code = save_err_code;
+			}
+		}
+	} catch (BaseConfig::ConfigException &e) {
+		Log(ERROR, "Error page not found:", __LINE__, __PRETTY_FUNCTION__, __FILE__);
+		return;
+	}
+
 }
 
 
@@ -203,9 +225,9 @@ void Response::read_file(const string &path) //change name later
 	{
 		if (dir_stat.st_mode & S_IFDIR) //if dir
 		{
-			Log(ERROR, "FILE IS A DIRECTORY HANDLE OPEN NEW PATH", __LINE__, __PRETTY_FUNCTION__, __FILE__);
+			Log(ERROR, "File is a directory change error code later", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 			_error_code = 404;
-			file.open("public/404.html", std::ios::binary);
+			/* file.open("public/404.html", std::ios::binary); */
 		}
 		else //if not dir
 		{
@@ -214,13 +236,10 @@ void Response::read_file(const string &path) //change name later
 		}
 	}
 	else
-		Log(ERROR, "CANNOT OPEN FILE SOMETHING VERY BAD HAPPENED", __LINE__, __PRETTY_FUNCTION__, __FILE__);
-
-    if (!file)
-    {
+	{
+		Log(ERROR, "File doesnt exist or cant be opened", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 		_error_code = 404;
-        file.open("public/404.html", std::ios::binary);
-    }
+	}
 
     char read_buffer[65535]; // create a read_buffer
     while (file.read(read_buffer, sizeof(read_buffer)))
@@ -232,14 +251,18 @@ void Response::read_file(const string &path) //change name later
 
 void Response::respond(void)
 {
-    if (_req.done())
+    if (_req.done() || _req.bad_request())
     {
         if (_req.path() == "/upload.html") //move later
+		{
+			cout << "IN HERE" << endl;
             _req.process_image();
+		}
         ssize_t total_to_send = _entireText.length();
 		cout << "total to send :" << total_to_send << endl;
 
 		ssize_t sent = send(_client_fd, _entireText.c_str(), _entireText.length(), 0);
+		cout << sent << endl;
 		if (sent == 0)
 			cout << "SENT IS 0" << endl;
 		if (sent == -1)

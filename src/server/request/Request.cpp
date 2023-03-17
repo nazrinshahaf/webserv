@@ -1,5 +1,8 @@
 #include "Request.hpp"
+#include "../../log/Log.hpp"
+#include "../../utils/Utils.hpp"
 #include <cstddef>
+#include <exception>
 #include <iostream>
 #include <string>
 #include <cstring>  
@@ -70,19 +73,19 @@ void Request::find_request_protocol_version() {
 }
 
 bool isNumber(const string &s)
- {
-    return s.find_first_not_of("0123456789") == string::npos;
- }
+{
+	return s.find_first_not_of("0123456789") == string::npos;
+}
 
 void Request::parse_headers()
 {
     for (std::vector<string>::iterator line = _header_lines.begin() + 1; line != _header_lines.end(); line++)
     {
-        if (*line == "\n")
+        if (*line == "\r\n")
             break;
 
-        string key = (*line).substr(0, (*line).find(" ") - 1);
-        string value = (*line).substr((*line).find(" ") + 1, (*line).size() - (*line).find(" ") - 2); // -2 is for invisible characters at the end of every line in a http header
+        string key = line->substr(0, line->find(" ") - 1);
+        string value = (*line).substr((*line).find(" ") + 1, (*line).size() - (*line).find(" ") - 1); // -1 is for invisible characters at the end of every line in a http header
         _headers[key] = value;
     }
     // if post and no Content-Length
@@ -93,9 +96,11 @@ void    Request::process_post()
 {
     if (_headers.find("Content-Length") == _headers.end() || !isNumber(_headers["Content-Length"]))
     {
-        _is_done = 1; // TODO response should detect this
+		cout << "no content length found" << endl;
+        _is_done = true; //this changes to error_code
         return ;
     }
+	
     if (std::stoi(_headers["Content-Length"]) >= 1
         && _body.size() == std::stoul(_headers["Content-Length"]))
         _is_done = true;
@@ -137,6 +142,7 @@ void    Request::process_image()
 {
     if (_headers.find("Content-Type") == _headers.end())
         return ;
+
     if (_headers["Content-Type"].find("multipart/form-data;") == 0)
     {
         string boundary;
@@ -156,27 +162,40 @@ void    Request::process_image()
             string headers = *data;
             std::map<string, string> temp_dict;
 
-            while (headers.find("\n") != string::npos)
+			/* cout << "START: <" << *data << ">" << endl; */
+			/* cout << "data length : " << data->length() << endl; */
+
+            while (headers.find("\r\n") != string::npos)
             {
-                string line =  (headers.substr(0, headers.find("\n")));
+                string line =  (headers.substr(0, headers.find("\r\n")));
                 if (line.find(":") != string::npos)
                 {
                     string key = (line).substr(0, (line).find(" ") - 1);
-                    string value = (line).substr((line).find(" ") + 1, (line).size() - (line).find(" ") - 2);
+                    string value = (line).substr((line).find(" ") + 1, (line).size() - (line).find(" ") - 1);
+					/* cout << "Key : [" << key << "]" << endl; */
+					/* cout << "value : [" << value << "]" << endl; */
                     temp_dict[key] = value;
                 }
-                headers = headers.erase(0, headers.find("\n") + 1);
+                headers = headers.erase(0, headers.find("\r\n") + 2);
                 if (headers.size() >= 2 && headers[0] == '\r' && headers[1] == '\n') {
                     temp_dict["body"] = headers.substr(2, headers.length() - 6);
                     break;
                 }
             }
 
+			/* if (temp_dict.find("Content-Type") != temp_dict.end()) */
+			/* { */
+			/* 	cout << "CT : " << "[" << temp_dict.find("Content-Type")->first << "]" << endl; */
+			/* 	cout << "CTV: " << "[" << temp_dict.find("Content-Type")->second<< "]"  << endl; */
+			/* } */
+
             if (temp_dict.find("Content-Type") != temp_dict.end() &&
                 (temp_dict.find("Content-Type")->second == "image/png" ||
                  temp_dict.find("Content-Type")->second == "image/jpeg"))
             {
-
+				cout << "doing something" << endl;
+				cout << "writing length : " << temp_dict["body"].length() << endl;
+				/* cout << "SENT :" << temp_dict["body"] << endl; */
                 string filename = find_filename(temp_dict["Content-Disposition"]);
                 std::ofstream out(filename);
                 out << temp_dict["body"];
@@ -186,43 +205,118 @@ void    Request::process_image()
     }
 }
 
-Request::Request(string request_string, int socket) : _body(""), _socket(socket), _is_done(false), _bad_request(false)
+void	Request::read_header(string request_string)
+{
+
+	//if no header content yet and first characters are \r\n (ignoring empty lines on first request)
+	
+	/* cout << "header line size " << _header_lines.size() << endl; */
+	/* cout << "request_string = [" << request_string << "]" << endl; */
+	string test = request_string;
+	utils::replaceAll(test, "\r\n", "\\r\\n\n");
+	/* cout << test; */
+	/* cout << "request_string length " << request_string.length() << endl; */
+	/* cout << "request_string.find " << request_string.find("\r\n") << endl; */
+
+	if (_header_lines.size() == 0 && request_string.find("\r\n") == 0) // can merge in while loop
+	{
+		/* cout << "Empty \\r\\n" << endl; */
+		return ;
+	}
+
+	/* for (std::vector<string>::iterator it = _header_lines.begin(); it != _header_lines.end(); it++) */
+	/* 	cout << "header line = [" << *it << "]" <<endl; */
+
+    while (request_string.find("\r\n") != request_string.npos)
+    {
+		/* cout << "loop" << endl; */
+		if (_header_lines.size() == 1)
+		{
+			if (!find_request_type())
+			{
+				_bad_request = true;
+				return ;
+			}
+			cout << "TYPE : " << type() << endl;
+			find_request_path();
+			find_request_protocol_version();
+		}
+        if (request_string.find("\r\n") == 0)
+        {
+			//set header_done()
+			Log(DEBUG, "header done");
+			_header_done = true;
+            request_string = request_string.substr(request_string.find("\r\n") + 2);
+            _body = request_string;
+			/* cout << _body << endl; */
+			cout << _body.length() << endl;
+			/* cout << "header line size " << _header_lines.size() << endl; */
+            break;
+        }
+        string line = request_string.substr(0, request_string.find("\r\n"));
+		cout << "line [" << line << "]" << endl;
+        _header_lines.push_back(line);
+		/* cout << "header line size " << _header_lines.size() << endl; */
+        request_string = request_string.substr(request_string.find("\r\n") + 2);
+		/* cout << "req string [" << request_string << "]" << endl; */
+    }
+
+	/* cout << "after loop" << endl; */
+
+	/* for (std::vector<string>::iterator it = _header_lines.begin(); it != _header_lines.end(); it++) */
+	/* 	cout << "header line = [" << *it << "]" <<endl; */
+
+	/*     if (_header_lines.size() < 1 || _header_lines[0].size() <= 2) //might not need */
+	/* { */
+	/*         _bad_request = true; */
+	/*         return ; */
+	/* } */
+
+	if (!header_done())
+	{
+		cout << "HEADER NOT DONE" << endl;
+		return;
+	}
+
+    parse_headers();
+    if (type() == "POST")
+	{
+		cout << "IN POST" << endl;
+        process_post();
+	}
+    if (type() == "GET" || type() == "DELETE")
+        _is_done = true;
+}
+
+Request::Request(string request_string, int socket) :
+	_body(""), _socket(socket),
+	_is_done(false), _header_done(false), _bad_request(false)
+{
+#ifdef PRINT_MSG
+	cout << "Request Assignment Constructor called" << endl;
+#endif
+	read_header(request_string);
+}
+
+Request::Request() :
+	_is_done(false), _header_done(false), _bad_request(false)
 {
 #ifdef PRINT_MSG
 	cout << "Request Default Constructor called" << endl;
 #endif
+}
 
-	/* cout << "request_string.size : " << request_string.length() << endl; */
-	/* cout << "request_string = [" << request_string << "]" << endl; */
-    while (request_string.find("\n") != request_string.npos && request_string != "\r\n")
-    {
-        string line = request_string.substr(0, request_string.find("\n"));
-        _header_lines.push_back(line);
-        request_string = request_string.substr(request_string.find("\n") + 1);
-        if (request_string.find("\r\n") == 0)
-        {
-            request_string = request_string.substr(request_string.find("\n") + 1);
-            _body = request_string;
-            break;
-        }
-    }
-    if (_header_lines.size() < 1 || _header_lines[0].size() <= 2)
-	{
-        _bad_request = true;
-        return ;
-	}
-    if (!find_request_type())
-    {
-        _bad_request = true;
-        return ;
-    }
-    find_request_path();
-    find_request_protocol_version();
-    parse_headers();
-    if (type() == "POST")
-        process_post();
-    if (type() == "GET" || type() == "DELETE")
-        _is_done = 1;
+Request::Request(const Request &to_copy) :
+	_headers(to_copy._headers), _header_lines(to_copy._header_lines),
+	_body(to_copy._body), _type(to_copy._type), _path(to_copy._path),
+	_protocol_version(to_copy._protocol_version), _socket(to_copy._socket),
+	_is_done(to_copy._is_done), _header_done(to_copy._header_done),
+	_bad_request(to_copy._bad_request)
+
+{
+#ifdef PRINT_MSG
+	cout << "Request Copy Constructor called" << endl;
+#endif
 }
 
 Request::~Request()
@@ -252,12 +346,13 @@ void  Request::add_body(string buffer)
         return ;
     if (_headers.find("Content-Length") == _headers.end())
         return ;
+    /* if (std::stoul(_headers["Content-Length"]) == _body.size()) */
+    /*     _is_done = true; */
+    for (string::iterator it = buffer.begin(); it != buffer.end(); it++)
+        _body.push_back(*it);
     if (std::stoul(_headers["Content-Length"]) == _body.size())
         _is_done = true;
-    for (string::iterator it = buffer.begin(); it != buffer.end(); it++)
-    {
-        _body.push_back(*it);
-    }
+	cout << _body.length() << endl;
 }
 
 
@@ -273,6 +368,8 @@ std::ostream &operator<<(std::ostream &os, const webserv::Request &request)
 
 
 bool      Request::done() { return _is_done; }
+
+bool      Request::header_done() { return _header_done; }
 
 bool	  Request::bad_request() { return _bad_request; }
 

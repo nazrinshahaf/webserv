@@ -99,9 +99,9 @@ void	Server::acceptor(ListeningSocket &server)
 	if (new_socket_fd >= 0)
 	{
 		Log(DEBUG, string("Client open with fd : ") + to_string(new_socket_fd),
-				__LINE__, __FILE__, __PRETTY_FUNCTION__, 2, server.get_config());
+				0, NULL, NULL, 2, server.get_config());
 		Log(INFO, "Client connected with ip : " + server.get_client_ip(),
-				__LINE__, __FILE__, __PRETTY_FUNCTION__, 2, server.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
+				0, NULL, NULL, 2, server.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
 		_client_sockets[new_socket_fd] = string("");
 
 		struct pollfd client_fd_to_insert;
@@ -117,31 +117,31 @@ int	Server::receiver(const int &client_fd)
 	char	buffer[_recv_buffer_size + 1] = {0}; //+1 for \0
 	long	valread;
 	string	client_header_request;
-	Request	req;
-	/* std::map<int, string>::iterator	client = _client_sockets.find(client_fd); */
 
 	valread = recv(client_fd, buffer, _recv_buffer_size, 0);
-	if (valread < 0) //nothing to read
-		return 0; //sent partial request
-
-	while (valread > 0)
-	{
-		client_header_request.append(buffer, valread);
-		valread = recv(client_fd, buffer, _recv_buffer_size, 0);
-	}
-
-
+	client_header_request.append(buffer, valread);
+	cout << client_header_request.length() << endl;
 	if (_requests.find(client_fd) == _requests.end()) // if this request is new
 		_requests[client_fd] = Request(client_header_request, client_fd);
 	else //if this request is already being processed
 	{
-		req = _requests[client_fd];
-		if (client_header_request.length() != 0)
-			req.add_body(client_header_request);
+		Log(DEBUG, "Request not new");
+		if (!_requests[client_fd].header_done())
+			_requests[client_fd].read_header(client_header_request);
+		else 
+			if (client_header_request.length() != 0)
+				_requests[client_fd].add_body(client_header_request);
 	}
-	if (req.done() || req.bad_request())
+
+	cout << "done :" << _requests[client_fd].done() << endl;
+	cout << "header_done :" << _requests[client_fd].header_done() << endl;
+	cout << "type :" << _requests[client_fd].type() << endl;
+	cout << "bad_request :" << _requests[client_fd].bad_request() << endl;
+	if ((_requests[client_fd].header_done() && _requests[client_fd].type() == "GET") ||
+		(_requests[client_fd].done() && _requests[client_fd].type() == "POST") ||
+			_requests[client_fd].bad_request())
 	{
-		Log(DEBUG, req.to_str());
+		Log(DEBUG, _requests[client_fd].to_str());
 		return (1); //sent full request
 	}
 	return (0); //sent partial request
@@ -153,10 +153,12 @@ int		Server::responder(ListeningSocket &server, int &client_fd)
 
 	if (_responses.find(client_fd) == _responses.end()) // if this request is new
 	{
-		std::map<int, string>::iterator	client = _client_sockets.find(client_fd);
-		Response responder(req, server, client->first);
+		Log(DEBUG, "Respond new");
+		Response responder(req, server, client_fd);
 		_responses[client_fd] = responder;
 	}
+	else
+		Log(DEBUG, "Respond not new");
 
 	_responses[client_fd].respond();
 	if (_responses[client_fd].hasText() == false)
@@ -273,7 +275,6 @@ void	Server::launch()
 		}
     }
 }
-
 
 void	Server::add_servers_to_poll(void)
 {

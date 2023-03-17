@@ -14,15 +14,17 @@ namespace webserv
 	{
 
 		private:
-    		std::vector <string>		_header_lines;
     		std::map <string, string>	_headers;
+    		std::vector <string>		_header_lines; //move to private later
 			string						_body;
 			string						_type;
 			string						_path;
 			string						_protocol_version;
 			int							_socket;
 			bool						_is_done;
-			bool						_bad_request;
+			bool						_header_done;
+			bool						_bad_request; //change to int
+
 			int							find_request_type();
 			void						find_request_path();
 			void						find_request_protocol_version();
@@ -36,10 +38,9 @@ namespace webserv
 			 * @param 'request' : specifies the raw request string which was received
              *
 			 * */
-			Request() {};
+			Request();
+			Request(const Request &to_copy);
 			Request(string request_string, int socket);
-
-
 			~Request();
 
 			string    						&body();
@@ -51,8 +52,10 @@ namespace webserv
 			const string					to_str() const;
 			bool							bad_request();
 			bool							done();
+			bool							header_done();
 			void							add_body(string buffer);
 			void							process_image();
+			void							read_header(string request_string);
 			struct RequiredHeaderParamNotGivenException : public std::exception {
 				const char * what () const throw () {
 					return "required header has not been supplied";
