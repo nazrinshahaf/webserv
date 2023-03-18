@@ -189,9 +189,7 @@ void    Request::process_image()
 			/* 	cout << "CTV: " << "[" << temp_dict.find("Content-Type")->second<< "]"  << endl; */
 			/* } */
 
-            if (temp_dict.find("Content-Type") != temp_dict.end() &&
-                (temp_dict.find("Content-Type")->second == "image/png" ||
-                 temp_dict.find("Content-Type")->second == "image/jpeg"))
+            if (temp_dict.find("Content-Type") != temp_dict.end())
             {
 				cout << "doing something" << endl;
 				cout << "writing length : " << temp_dict["body"].length() << endl;
