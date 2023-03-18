@@ -178,7 +178,7 @@ void    Request::process_image()
                 }
                 headers = headers.erase(0, headers.find("\r\n") + 2);
                 if (headers.size() >= 2 && headers[0] == '\r' && headers[1] == '\n') {
-                    temp_dict["body"] = headers.substr(2, headers.length() - 6);
+                    temp_dict["body"] = headers.substr(2, headers.length() - 4);
                     break;
                 }
             }
