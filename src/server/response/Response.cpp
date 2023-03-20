@@ -477,6 +477,7 @@ string Response::process_cgi(void)
 			write(tempfd[1], _req.body().c_str(), _req.body().length());
 			dup2(tempfd[0], STDIN_FILENO);
 			close(tempfd[1]);
+			close(tempfd[0]);
 		}
 
 		
