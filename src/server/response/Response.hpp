@@ -49,7 +49,7 @@ namespace webserv
 		string	find_path_info();
 
 		string	get_location_path(void) const;
-		int		is_autoindex(void) const;
+		bool		is_autoindex(void) const;
 		bool	is_cgi(void) const;
 		bool	is_file(const string path) const;
 		bool	check_file_status(const string path) const;

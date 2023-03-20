@@ -186,16 +186,16 @@ string	Response::get_location_path(void) const
 	return (longest_match);
 }
 
-int		Response::is_autoindex(void) const
+bool	Response::is_autoindex(void) const
 {
 	string location_path = get_location_path();
 	if (location_path == "")
 	{
 		try {
 			_serverConfig.find_normal_directive("autoindex");
-			return (1);
+			return (true);
 		} catch (BaseConfig::ConfigException &e) {
-			return (0);
+			return (false);
 		}
 	}
 	else
@@ -204,10 +204,10 @@ int		Response::is_autoindex(void) const
 			ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
 
 			if (location_block.get_config().find("autoindex") == location_block.get_config().end())
-				return (0);
-			return (1);
+				return (false);
+			return (true);
 		} catch (BaseConfig::ConfigException &e) {
-			return (0);
+			return (false);
 		}
 	}
 }
