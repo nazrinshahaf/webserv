@@ -33,9 +33,6 @@ namespace webserv
 		int								_error_code;
 		char							**_envp;
 
-		/* void	handle_default_block(void); */
-		/* void	handle_location_block(void); */
-
 		string	handle_auto_index(string &path);
 
 		void	read_file(const string &path);
@@ -44,16 +41,18 @@ namespace webserv
 
 		bool 	path_includes_cgi(void);
 		
-		string	process_cgi(void);
+		string	process_cgi(const string cgi_path);
 		string	get_full_path(void);
 		string	get_true_root(const ServerLocationDirectiveConfig::map_type &location_block_config) const;
 		string	get_true_index(const ServerLocationDirectiveConfig::map_type &location_block_config) const;
 		string	find_query_string();
 		string	find_path_info();
 
-		/* int		is_location_block(void) const; */
 		string	get_location_path(void) const;
 		int		is_autoindex(void) const;
+		bool	is_cgi(void) const;
+		bool	is_file(const string path) const;
+		bool	check_file_status(const string path) const;
 
     public:
         Response();
