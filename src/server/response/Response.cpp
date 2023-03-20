@@ -19,6 +19,9 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <sstream>
+#include <unistd.h>
+#include <fcntl.h>
+
 #include "../../utils/Utils.hpp"
 
 #define _XOPEN_SOURCE 700 //for autoindex
@@ -33,10 +36,10 @@ Response::Response() : _hasText(false)
 {
 }
 
-Response::Response(const Request &req, ListeningSocket &server, const int &client_fd) : 
+Response::Response(const Request &req, ListeningSocket &server, const int &client_fd, char **envp) : 
 	_req(req), _server(server), _serverConfig(server.get_config()),
 	_client_fd(client_fd), _entireHeader(""), _entireBody(""), _entireText(""),
-	_hasText(true), _error_code(0)  //change later when req.bad_req is int
+	_hasText(true), _error_code(0), _envp(envp) //change later when req.bad_req is int
 {
 	_root_path = _serverConfig.find_normal_directive("root").get_value(); //change again
 	if (_req.bad_request())
@@ -52,6 +55,8 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 
 	if (_req.type() == "GET")
 	{
+		if (path_includes_cgi())
+			return ;
 		string full_path = get_full_path();
 
 		/* Log(WARN, "Auto index = " + std::to_string(is_autoindex())); */
@@ -69,7 +74,6 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 			build_error_body();
 		build_header();
 		_entireText = _entireHeader + _entireBody;
-		cout << _entireText << endl;
 	}
 }
 
@@ -381,6 +385,137 @@ void Response::read_file(const string &path) //change name later
 	file.close();
 }
 
+bool Response::path_includes_cgi(void)
+{
+	if (_req.path().find("/cgi") != string::npos) //TODO:, find cgi paths dynamically
+		return true;
+	return false;
+}
+
+string	Response::find_query_string()
+{
+	//TODO: dynamically find cgi path
+	string query;
+
+	if (_req.path().find("?") == string::npos)
+		return (string(""));
+	query = _req.path().substr(_req.path().find("?"), _req.path().length() - _req.path().find("?"));
+	return (query);
+}
+
+string	Response::find_path_info()
+{
+	string path;
+	int end;
+
+	if (_req.path().find("?") != string::npos)
+		end = _req.path().find("?") - string("/cgi").length(); //TODO: dynamic
+	else
+		end = _req.path().length();
+
+	path = _req.path().substr(string("/cgi").length(), end); //TODO: dynamic
+
+	if (path.length() == 0)
+		path = "/";
+	return (path);
+}
+
+char	**create_new_envp(string query_string, string path_info, char **envp)
+{
+	int count;
+	char **new_envp;
+
+	count = 0;
+	for (char **env = envp; *env != 0; env++)
+		count++;
+	new_envp = (char **)malloc(sizeof(char *) * (count + 3));
+	count = 0;
+	for (char **env = envp; *env != 0; env++)
+	{
+		new_envp[count] = envp[count];
+		count++;
+	}
+	new_envp[count] = strdup((string("QUERY_STRING=") + query_string).c_str());
+	new_envp[count + 1] = strdup((string("PATH_INFO=") + path_info).c_str());
+	new_envp[count + 2] = NULL;	
+	return new_envp;
+}
+
+string Response::process_cgi(void)
+{
+	cout << "ENTERED CGI PATH" << endl;
+	string entireText = "";
+	int		fd[2];
+	char	execve_buffer[100000];
+	pipe(fd);
+	pid_t i = fork();
+	if (i == 0) //child
+	{
+		std::vector<std::string>  s;
+		s.push_back("/usr/local/bin/python3");
+		s.push_back("cgi.py");
+
+		std::vector<char*> commands;
+		for (size_t i = 0; i < s.size(); i++)
+			commands.push_back(const_cast<char*>(s[i].c_str()));
+		commands.push_back(nullptr);
+
+		dprintf(2, "in child\n");
+
+		string query_string, path_info;
+
+		query_string = find_query_string();
+		path_info = find_path_info();
+
+		// int file;
+		if (_req.type() == "POST") //read the request body if its post
+		{
+			int tempfd[2];
+
+			pipe(tempfd);
+			// file = open((string("body") + std::to_string(_req.socket())).c_str(), O_RDWR);
+			write(tempfd[1], _req.body().c_str(), _req.body().length());
+			dup2(tempfd[0], STDIN_FILENO);
+			close(tempfd[1]);
+		}
+
+		
+		
+		dup2(fd[1], STDOUT_FILENO);
+		close(fd[1]);
+		close(fd[0]);
+		execve("/usr/local/bin/python3", commands.data(), create_new_envp(query_string, path_info, _envp));
+		exit(1);
+	}
+	else if (i > 0) //parent
+	{
+		dprintf(2, "parent waiting\n");
+		if (_req.type() == "POST")
+			std::remove((string("body") + std::to_string(_req.socket())).c_str());
+		close(fd[1]);
+		waitpid(i, NULL, 0);
+		dprintf(2, "parent done waiting\n");
+		int test = read(fd[0], execve_buffer, 99999);
+		close(fd[0]);
+		dprintf(2, "\t\t--BEFORE---\n");
+		dprintf(2, "%s", entireText.c_str());
+		dprintf(2, "\t\t-----\n");
+		dprintf(2, "read count = [%d]\n", test);
+		// dprintf(2, "execve buffer = [%s]\n", execve_buffer);
+		execve_buffer[test] = '\0';
+		entireText = string(execve_buffer);
+		dprintf(2, "\t\t-----\n");
+		dprintf(2, "%s", entireText.c_str());
+		dprintf(2, "\t\t-----\n");
+	}
+	else
+	{
+		perror("fork failed");
+		_exit(3);
+	}
+	return entireText;
+}
+
 void Response::respond(void)
 {
     if (_req.done() || _req.bad_request())
@@ -390,6 +525,11 @@ void Response::respond(void)
 			cout << "IN HERE" << endl;
             _req.process_image();
 		}
+		else if (path_includes_cgi())
+		{
+			_entireText += process_cgi();
+		}
+
         ssize_t total_to_send = _entireText.length();
 		cout << "total to send :" << total_to_send << endl;
 

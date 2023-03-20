@@ -43,7 +43,7 @@ using std::cout;
 using std::endl;
 using std::to_string;
 
-Server::Server(const ServerConfigParser &config) : _config(config)
+Server::Server(const ServerConfigParser &config, char **envp) : _config(config), _envp(envp)
 {
 #ifdef PRINT_MSG
 	cout << GREEN "Server Assignment Constructor Called" RESET << endl;
@@ -147,14 +147,14 @@ int	Server::receiver(const int &client_fd)
 	return (0); //sent partial request
 }
 
-int		Server::responder(ListeningSocket &server, int &client_fd)
+int		Server::responder(ListeningSocket &server, int &client_fd, char **envp)
 {
 	Request	req = _requests.find(client_fd)->second;
 
 	if (_responses.find(client_fd) == _responses.end()) // if this request is new
 	{
 		Log(DEBUG, "Respond new");
-		Response responder(req, server, client_fd);
+		Response responder(req, server, client_fd, envp);
 		_responses[client_fd] = responder;
 	}
 	else
@@ -260,7 +260,7 @@ void	Server::launch()
 				else if (curr_poll->revents & POLLOUT) //handling respoonse of http request
 				{
 					Log(DEBUG, "Client POLLOUT");
-					if (responder(server->second, curr_poll->fd) == 1) //if finish sending response
+					if (responder(server->second, curr_poll->fd, _envp) == 1) //if finish sending response
 					{
 						Log(DEBUG, "Server send full response to client");
 						remove_client(curr_poll->fd, i);

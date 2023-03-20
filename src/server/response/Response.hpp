@@ -31,6 +31,7 @@ namespace webserv
         string							_entireText;
         bool							_hasText;
 		int								_error_code;
+		char							**_envp;
 
 		/* void	handle_default_block(void); */
 		/* void	handle_location_block(void); */
@@ -41,9 +42,14 @@ namespace webserv
 		void	build_header(void);
 		void	build_error_body(void);
 
+		bool 	path_includes_cgi(void);
+		
+		string	process_cgi(void);
 		string	get_full_path(void);
 		string	get_true_root(const ServerLocationDirectiveConfig::map_type &location_block_config) const;
 		string	get_true_index(const ServerLocationDirectiveConfig::map_type &location_block_config) const;
+		string	find_query_string();
+		string	find_path_info();
 
 		/* int		is_location_block(void) const; */
 		string	get_location_path(void) const;
@@ -51,7 +57,7 @@ namespace webserv
 
     public:
         Response();
-        Response(const Request &req, ListeningSocket &server, const int &client_fd);
+        Response(const Request &req, ListeningSocket &server, const int &client_fd, char **envp);
         ~Response();
 
         void respond(void);
