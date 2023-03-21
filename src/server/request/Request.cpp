@@ -235,7 +235,6 @@ void	Request::read_header(string request_string)
 				_bad_request = true;
 				return ;
 			}
-			cout << "TYPE : " << type() << endl;
 			find_request_path();
 			find_request_protocol_version();
 		}
@@ -247,12 +246,11 @@ void	Request::read_header(string request_string)
             request_string = request_string.substr(request_string.find("\r\n") + 2);
             _body = request_string;
 			/* cout << _body << endl; */
-			cout << _body.length() << endl;
+			// cout << _body.length() << endl;
 			/* cout << "header line size " << _header_lines.size() << endl; */
             break;
         }
         string line = request_string.substr(0, request_string.find("\r\n"));
-		cout << "line [" << line << "]" << endl;
         _header_lines.push_back(line);
 		/* cout << "header line size " << _header_lines.size() << endl; */
         request_string = request_string.substr(request_string.find("\r\n") + 2);
@@ -359,8 +357,9 @@ void  Request::add_body(string buffer)
     else if (_headers.find("Content-Length") == _headers.end())
         return ;
 
-    for (string::iterator it = buffer.begin(); it != buffer.end(); it++)
-        _body.push_back(*it);
+    // for (string::iterator it = buffer.begin(); it != buffer.end(); it++)
+    //     _body.push_back(*it);
+    _body.append(buffer, buffer.length());
 	
     if (!is_chunked() && std::stoul(_headers["Content-Length"]) == _body.size())
         _is_done = true;

@@ -58,28 +58,25 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 		string full_path = get_full_path();
 
 		/* Log(WARN, "Auto index = " + std::to_string(is_autoindex())); */
-		cout << "full_path : " << full_path << endl;
+		// cout << "full_path : " << full_path << endl;
 		if (is_autoindex() && !is_file(full_path))
 		{
-			cout << "in 1" << endl;
 			_entireBody = handle_auto_index(full_path);
 		}
 		else if (is_cgi())
 		{
-			cout << "in 2" << endl;
 			Log(DEBUG, "PROCESS IS CGI");
 			_entireBody = process_cgi(full_path);
 		}
 		else if (!is_redirect())
 		{
-			cout << "in 3" << endl;
 			read_file(full_path);
 		}
 		if (_error_code != 0)
 			build_error_body();
 		build_header();
 		_entireText = _entireHeader + _entireBody;
-		cout << _entireHeader << endl;
+		// cout << _entireHeader << endl;
 	}
 	else if (_req.type() == "DELETE")
 	{
@@ -145,7 +142,7 @@ string	Response::get_full_path(void)
 	if (_req.path() == "/" || _req.path() == "")
 	{
 		full_path = _serverConfig.find_normal_directive("root").get_value();
-		Log(WARN, "true root in / : " + full_path);
+		Log(DEBUG, "true root in / : " + full_path);
 		/* if (is_autoindex()) */
 		/* 	return full_path; */
 		full_path += "/" + _serverConfig.find_normal_directive("index").get_value();
@@ -309,7 +306,7 @@ void Response::read_file(const string &path) //change name later
 	struct stat	dir_stat;
 
 	utils::replaceAll(path_no_spaces, "%20", " ");
-	Log(WARN, "in read_file : [" + path_no_spaces + "]");
+	Log(DEBUG, "in read_file : [" + path_no_spaces + "]");
 
 	if (stat(path_no_spaces.c_str(), &dir_stat) == 0) //if successfully stat
 	{
@@ -587,15 +584,14 @@ void Response::respond(void)
 		//check if path is ridrection dynamically
 		if (_req.path() == "/upload.html") //move later (dynamic)
 		{
-			cout << "IN HERE" << endl;
 			_req.process_image();
 		}
 
-        ssize_t total_to_send = _entireText.length();
-		cout << "total to send :" << total_to_send << endl;
+        // ssize_t total_to_send = _entireText.length();
+		// cout << "total to send :" << total_to_send << endl;
 
 		ssize_t sent = send(_client_fd, _entireText.c_str(), _entireText.length(), 0);
-		cout << "sent : " << sent << endl;
+		// cout << "sent : " << sent << endl;
 		if (sent == 0)
 			cout << "SENT IS 0" << endl;
 		if (sent == -1)
@@ -605,7 +601,7 @@ void Response::respond(void)
 		}
 		if (sent != (ssize_t)_entireText.length())
 		{
-			cout << "amount sent:" << sent << endl;
+			// cout << "amount sent:" << sent << endl;
 			_entireText = _entireText.substr(sent);
 		}
 		else

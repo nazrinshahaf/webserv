@@ -63,7 +63,8 @@ Server::Server(const ServerConfigParser &config, char **envp) : _config(config),
 			/* _server_sockets.push_back(ListeningSocket(AF_INET, SOCK_STREAM, 0, std::stoi(nd.get_value()), INADDR_ANY, 10, server_config)); */
 			/* _server_sockets.insert(std::make_pair(fd, ListeningSocket(AF_INET, SOCK_STREAM, 0, std::stoi(nd.get_value()), INADDR_ANY, 10, server_config))); */
 			add_socket(server_config, nd);
-			Log(INFO, string("Server open at port ") + nd.get_value(), 0, NULL, NULL, 2, server_config);
+			// Log(INFO, string("Server open at port ") + nd.get_value(), 0, NULL, NULL, 2, server_config);
+			Log(INFO, string("Server open at port ") + nd.get_value());
 		}
 	}
 	//cout << _config << endl;
@@ -79,7 +80,7 @@ Server::~Server()
 void	Server::add_socket(const ServerConfig &server_config, const ServerNormalDirectiveConfig &socket_config)
 {
 	int				port = atoi(socket_config.get_value().c_str());
-	ListeningSocket	server_socket(AF_INET, SOCK_STREAM, 0, port, INADDR_ANY, 10, server_config);
+	ListeningSocket	server_socket(AF_INET, SOCK_STREAM, 0, port, INADDR_ANY, 100, server_config);
 
 	_server_sockets.insert(std::make_pair(server_socket.get_sock(), server_socket));
 }
@@ -122,7 +123,7 @@ int	Server::receiver(const int &client_fd)
 	client_header_request.append(buffer, valread);
 	if (valread == 0)
 		return (-1);
-	cout << client_header_request.length() << endl;
+	// cout << client_header_request.length() << endl;
 	if (_requests.find(client_fd) == _requests.end()) // if this request is new
 	{
 		_requests[client_fd] = Request(client_header_request, client_fd);
@@ -138,15 +139,15 @@ int	Server::receiver(const int &client_fd)
 				_requests[client_fd].add_body(client_header_request);
 	}
 
-	cout << "done :" << _requests[client_fd].done() << endl;
-	cout << "header_done :" << _requests[client_fd].header_done() << endl;
-	cout << "type :" << _requests[client_fd].type() << endl;
-	cout << "bad_request :" << _requests[client_fd].bad_request() << endl;
+	// cout << "done :" << _requests[client_fd].done() << endl;
+	// cout << "header_done :" << _requests[client_fd].header_done() << endl;
+	// cout << "type :" << _requests[client_fd].type() << endl;
+	// cout << "bad_request :" << _requests[client_fd].bad_request() << endl;
 	if ((_requests[client_fd].header_done() && (_requests[client_fd].type() == "GET" || _requests[client_fd].type() == "DELETE")) ||
 		(_requests[client_fd].done() && _requests[client_fd].type() == "POST") ||
 			_requests[client_fd].bad_request())
 	{
-		Log(DEBUG, _requests[client_fd].to_str());
+		// Log(DEBUG, _requests[client_fd].to_str());
 		return (1); //sent full request
 	}
 	return (0); //sent partial request
@@ -212,7 +213,7 @@ void	Server::launch()
 			
 			if (server == _server_sockets.end() && ++_timeout[curr_poll->fd] > 1000)
 			{
-				Log(WARN, string("Client: " + to_string(curr_poll->fd) + " timeout: " + to_string(_timeout[curr_poll->fd]) + "s"));
+				// Log(WARN, string("Client: " + to_string(curr_poll->fd) + " timeout: " + to_string(_timeout[curr_poll->fd]) + "s"));
 				remove_client(curr_poll->fd, i);
 				continue;
 			}
@@ -223,19 +224,18 @@ void	Server::launch()
 			}
 
 			//printing all open clients on fd
-			for (std::map<int, string>::iterator server = _client_sockets.begin(); server != _client_sockets.end(); server++)
-				Log(INFO, (string("Client fd[") + to_string(server->first) + "] is open"));
+			// for (std::map<int, string>::iterator server = _client_sockets.begin(); server != _client_sockets.end(); server++)
+				// Log(INFO, (string("Client fd[") + to_string(server->first) + "] is open"));
 
-			if (curr_poll->revents != 0) {
-				printf("fd : %d; revents: %s%s%s\n", curr_poll->fd,
-						(curr_poll->revents & POLLIN)  ? "POLLIN "  : "",
-						(curr_poll->revents & POLLHUP) ? "POLLHUP " : "",
-						(curr_poll->revents & POLLERR) ? "POLLERR " : "");
-			}
+			// if (curr_poll->revents != 0) {
+			// 	printf("fd : %d; revents: %s%s%s\n", curr_poll->fd,
+			// 			(curr_poll->revents & POLLIN)  ? "POLLIN "  : "",
+			// 			(curr_poll->revents & POLLHUP) ? "POLLHUP " : "",
+			// 			(curr_poll->revents & POLLERR) ? "POLLERR " : "");
+			// }
 
 			if (server != _server_sockets.end()) //if server socket
 			{
-				cout << "IN HERE";
 				if (curr_poll->revents != POLLIN) //if server is not POLLIN fatal error
 				{
 					Log(ERROR, "Server no longer on POLLIN", __LINE__, __PRETTY_FUNCTION__, __FILE__);
@@ -243,15 +243,15 @@ void	Server::launch()
 				}
 				else if (curr_poll->revents & POLLIN) //if pollfd is a server and revents is triggered
 				{
-					Log(DEBUG, "Poll server socket with fd : " + to_string(curr_poll->fd));
+					// Log(DEBUG, "Poll server socket with fd : " + to_string(curr_poll->fd));
 					acceptor(server->second);
 				}
 			}
 			else //if client socket
 			{
-				std::map<int,int>::iterator	pair = _client_server_pair.find(curr_poll->fd);
+				// std::map<int,int>::iterator	pair = _client_server_pair.find(curr_poll->fd);
 				server = _server_sockets.find(_client_server_pair.find(curr_poll->fd)->second); //find server that client connected to.
-				Log(DEBUG, "Poll client socket with fd : " + to_string(curr_poll->fd) + ". Connected to server with fd : " + to_string(pair->second));
+				// Log(DEBUG, "Poll client socket with fd : " + to_string(curr_poll->fd) + ". Connected to server with fd : " + to_string(pair->second));
 				
 				if (curr_poll->revents & POLLHUP) //if client hungup (refresh) or ^C
 				{
@@ -260,11 +260,11 @@ void	Server::launch()
 				}
 				else if (curr_poll->revents & POLLIN) //handling receiving of http request
 				{
-					Log(DEBUG, "Client POLLIN");
+					// Log(DEBUG, "Client POLLIN");
 					int status = receiver(curr_poll->fd);
 					if (status == 1) //if request is done remove from list and add to POLLOUT
 					{
-						Log(DEBUG, "Client sent full request");
+						// Log(DEBUG, "Client sent full request");
 						curr_poll->events = POLLOUT;
 					}
 					else if (status == -1)
@@ -273,21 +273,21 @@ void	Server::launch()
 					}
 					else //if request not done
 					{
-						Log(DEBUG, "Client not done full request");
+						// Log(DEBUG, "Client not done full request");
 						continue;
 					}
 				}
 				else if (curr_poll->revents & POLLOUT) //handling respoonse of http request
 				{
-					Log(DEBUG, "Client POLLOUT");
+					// Log(DEBUG, "Client POLLOUT");
 					if (responder(server->second, curr_poll->fd, _envp) == 1) //if finish sending response
 					{
-						Log(DEBUG, "Server send full response to client");
+						// Log(DEBUG, "Server send full response to client");
 						remove_client(curr_poll->fd, i);
 					}
 					else
 					{
-						Log(DEBUG, "Server send partial response to client");
+						// Log(DEBUG, "Server send partial response to client");
 						continue;
 					}
 				}
