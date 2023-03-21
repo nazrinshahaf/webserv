@@ -120,9 +120,14 @@ int	Server::receiver(const int &client_fd)
 
 	valread = recv(client_fd, buffer, _recv_buffer_size, 0);
 	client_header_request.append(buffer, valread);
+	if (valread == 0)
+		return (-1);
 	cout << client_header_request.length() << endl;
 	if (_requests.find(client_fd) == _requests.end()) // if this request is new
+	{
 		_requests[client_fd] = Request(client_header_request, client_fd);
+		_timeout[client_fd] = 0;
+	}
 	else //if this request is already being processed
 	{
 		Log(DEBUG, "Request not new");
@@ -188,10 +193,12 @@ int		Server::responder(ListeningSocket &server, int &client_fd, char **envp)
 void	Server::launch()
 {
 	add_servers_to_poll();
+
     while(1)
     {
-		/* Log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size()))); */
-		int poll_rv = poll(_poll_fds.data(), _poll_fds.size(), 1000);
+		Log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size())));
+		Log(DEBUG, (string("Total amount of polls open : ") + to_string(_poll_fds.size())));
+		int poll_rv = poll(_poll_fds.data(), _poll_fds.size(), 100);
 		if (poll_rv < 0)
 		{
 			Log(ERROR, "Poll failed ", __LINE__, __PRETTY_FUNCTION__, __FILE__);
@@ -202,6 +209,13 @@ void	Server::launch()
 			struct pollfd			*curr_poll = &_poll_fds[i];
 			sockets_type::iterator	server = _server_sockets.find(curr_poll->fd); //finds server
 
+			
+			if (server == _server_sockets.end() && ++_timeout[curr_poll->fd] > 10)
+			{
+				cout << "Client: " << curr_poll->fd << " timeout: " << _timeout[curr_poll->fd] << "s";
+				remove_client(curr_poll->fd, i);
+				continue;
+			}
 			if (curr_poll->revents == 0) //if no events are detected on server
 			{
 				/* Log(DEBUG, "No revents for " + to_string(curr_poll->fd)); */
@@ -221,6 +235,7 @@ void	Server::launch()
 
 			if (server != _server_sockets.end()) //if server socket
 			{
+				cout << "IN HERE";
 				if (curr_poll->revents != POLLIN) //if server is not POLLIN fatal error
 				{
 					Log(ERROR, "Server no longer on POLLIN", __LINE__, __PRETTY_FUNCTION__, __FILE__);
@@ -236,8 +251,8 @@ void	Server::launch()
 			{
 				std::map<int,int>::iterator	pair = _client_server_pair.find(curr_poll->fd);
 				server = _server_sockets.find(_client_server_pair.find(curr_poll->fd)->second); //find server that client connected to.
-
 				Log(DEBUG, "Poll client socket with fd : " + to_string(curr_poll->fd) + ". Connected to server with fd : " + to_string(pair->second));
+				
 				if (curr_poll->revents & POLLHUP) //if client hungup (refresh) or ^C
 				{
 					Log(INFO, string("Client Hung Up Connection " + string(YELLOW) + "(POLLHUP)" + string(RESET)));
@@ -246,10 +261,15 @@ void	Server::launch()
 				else if (curr_poll->revents & POLLIN) //handling receiving of http request
 				{
 					Log(DEBUG, "Client POLLIN");
-					if (receiver(curr_poll->fd) == 1) //if request is done remove from list and add to POLLOUT
+					int status = receiver(curr_poll->fd);
+					if (status == 1) //if request is done remove from list and add to POLLOUT
 					{
 						Log(DEBUG, "Client sent full request");
 						curr_poll->events = POLLOUT;
+					}
+					else if (status == -1)
+					{
+						remove_client(curr_poll->fd, i);
 					}
 					else //if request not done
 					{
@@ -298,6 +318,7 @@ void	Server::remove_client(const int &client_fd, const int &poll_index)
 	_requests.erase(client_fd);
 	_responses.erase(client_fd);
 	_client_sockets.erase(client_fd);
+	_timeout.erase(client_fd);
 	close(client_fd);
 	_poll_fds.erase(_poll_fds.begin() + poll_index);
 }
