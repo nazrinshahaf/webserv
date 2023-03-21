@@ -58,17 +58,50 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 		string full_path = get_full_path();
 
 		/* Log(WARN, "Auto index = " + std::to_string(is_autoindex())); */
-		cout << "full_path : " << full_path << endl;
-
+		// cout << "full_path : " << full_path << endl;
 		if (is_autoindex() && !is_file(full_path))
+		{
 			_entireBody = handle_auto_index(full_path);
+		}
 		else if (is_cgi())
 		{
 			Log(DEBUG, "PROCESS IS CGI");
 			_entireBody = process_cgi(full_path);
 		}
-		else
+		else if (!is_redirect())
+		{
 			read_file(full_path);
+		}
+		if (_error_code != 0)
+			build_error_body();
+		build_header();
+		_entireText = _entireHeader + _entireBody;
+		// cout << _entireHeader << endl;
+	}
+	else if (_req.type() == "DELETE")
+	{
+		int	status;
+		string full_path = get_full_path();
+		cout << "full path is: " << full_path << endl;
+		struct stat	path;
+		stat(full_path.c_str(), &path);
+
+		if (!has_allowed_method(_req.type()))
+		{
+			Log(INFO, "Method not allowed");
+			_error_code = 405;
+		}
+		else
+		{
+			status = remove(full_path.c_str());
+			if (status == 0)
+				Log(INFO, "File has been deleted 💀");
+			else
+			{
+				_error_code = 204;
+				Log(INFO, "File to delete doesn't exists 🤰");
+			}
+		}
 		if (_error_code != 0)
 			build_error_body();
 		build_header();
@@ -128,7 +161,7 @@ string	Response::get_full_path(void)
 	if (_req.path() == "/" || _req.path() == "")
 	{
 		full_path = _serverConfig.find_normal_directive("root").get_value();
-		Log(WARN, "true root in / : " + full_path);
+		Log(DEBUG, "true root in / : " + full_path);
 		/* if (is_autoindex()) */
 		/* 	return full_path; */
 		full_path += "/" + _serverConfig.find_normal_directive("index").get_value();
@@ -148,7 +181,7 @@ string	Response::get_full_path(void)
 				true_root.pop_back();
 			cout << "true_root : " << true_root << endl;
 			cout << "full_path : " << full_path << endl;
-			if (!is_autoindex())
+			if (!is_autoindex() && has_allowed_method(_req.path()))
 			{
 				full_path = get_true_root(location_block_config);
 				if (full_path.back() != '/')
@@ -289,7 +322,12 @@ unsigned long int Response::get_client_max_body_size(void) const
 void	Response::build_header(void)
 {
 	_entireHeader = "HTTP/1.1 ";
-	if (_error_code)
+	if (is_redirect()) // todo: dynamically redir
+	{
+		_entireHeader += "301 Moved Permanently\r\nLocation: " + get_redirected_path() + "\r\n\r\n";
+		return;
+	}
+	else if (_error_code)
 	{
 		_entireHeader += std::to_string(_error_code) + " ";
 		switch (_error_code)
@@ -339,7 +377,7 @@ void Response::read_file(const string &path) //change name later
 	struct stat	dir_stat;
 
 	utils::replaceAll(path_no_spaces, "%20", " ");
-	Log(WARN, "in read_file : [" + path_no_spaces + "]");
+	Log(DEBUG, "in read_file : [" + path_no_spaces + "]");
 
 	if (stat(path_no_spaces.c_str(), &dir_stat) == 0) //if successfully stat
 	{
@@ -399,6 +437,67 @@ bool	Response::is_cgi(void) const
 		} catch (BaseConfig::ConfigException &e) {
 			return (0);
 		}
+	}
+}
+
+bool	Response::is_redirect(void) const
+{
+	string location_path = get_location_path();
+	try {
+		ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
+
+		if (location_block.get_config().find("return") == location_block.get_config().end())
+			return (0);
+		return (1);
+	} catch (BaseConfig::ConfigException &e) {
+		return (0);
+	}
+}
+
+bool	Response::has_allowed_method(const string method) const
+{
+	string location_path = get_location_path();
+	if (location_path == "")
+	{
+		try {
+			_serverConfig.find_normal_directive("allowed_methods"); //TODO add split methods for allowed methods in server block
+			return (1);
+		} catch (BaseConfig::ConfigException &e) {
+			return (0);
+		}
+	}
+	else
+	{
+		try {
+			ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
+			if (location_block.get_config().find("allowed_methods") == location_block.get_config().end())
+				return (0);
+			else
+			{
+				std::vector<string> methods = location_block.split_methods();
+				for (std::vector<string>::const_iterator it = methods.begin(); it != methods.end(); it++)
+					if (method == *it)
+						return (1);
+				return (0);
+			}
+		} catch (BaseConfig::ConfigException &e) {
+			return (0);
+		}
+	}
+}
+
+string	Response::get_redirected_path(void) const
+{
+
+	string location_path = get_location_path();
+	try {
+		ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
+
+		if (location_block.get_config().find("return") == location_block.get_config().end())
+			return ("");
+		return (location_block.get_config().find("return")->second);
+	} catch (BaseConfig::ConfigException &e) {
+		return ("");
 	}
 }
 
@@ -654,11 +753,13 @@ void Response::respond(void)
 {
     if (_req.done() || _req.bad_request())
     {
-        ssize_t total_to_send = _entireText.length();
-		cout << "total to send :" << total_to_send << endl;
+        /* ssize_t total_to_send = _entireText.length(); */
+		//check if path is ridrection dynamically
+        // ssize_t total_to_send = _entireText.length();
+		// cout << "total to send :" << total_to_send << endl;
 
 		ssize_t sent = send(_client_fd, _entireText.c_str(), _entireText.length(), 0);
-		cout << "sent : " << sent << endl;
+		// cout << "sent : " << sent << endl;
 		if (sent == 0)
 			cout << "SENT IS 0" << endl;
 		if (sent == -1)
@@ -668,7 +769,7 @@ void Response::respond(void)
 		}
 		if (sent != (ssize_t)_entireText.length())
 		{
-			cout << "amount sent:" << sent << endl;
+			// cout << "amount sent:" << sent << endl;
 			_entireText = _entireText.substr(sent);
 		}
 		else

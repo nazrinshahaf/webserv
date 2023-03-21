@@ -34,7 +34,7 @@ const char *valid_server_normal_directives_array[] = {"listen",
 	"client_max_body_size"};
 
 const char *valid_server_location_directives_array[] = {"cgi_pass",
-	"root", "allowed_methods", "autoindex", "index", "client_max_body_size"};
+	"root", "allowed_methods", "autoindex", "index", "client_max_body_size","return"};
 
 ServerConfigParser::ServerConfigParser(const string &config_str) : _config_str(config_str)
 {
