@@ -77,9 +77,12 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 
 		if (is_cgi())
 			_entireText = process_cgi(full_path);
+		else
+			_req.process_image();
 		if (_error_code != 0)
 			build_error_body();
 		build_header();
+		_entireText = _entireHeader + _entireBody;
 	}
 }
 
@@ -440,7 +443,7 @@ string Response::process_cgi(const string cgi_path)
 		dup2(fd[1], STDOUT_FILENO);
 		close(fd[1]);
 		close(fd[0]);
-		execve("/usr/local/bin/python3", commands.data(), create_new_envp(query_string, path_info, _envp));
+		execve("/usr/bin/python3", commands.data(), create_new_envp(query_string, path_info, _envp));
 		exit(1);
 	}
 	else if (i > 0) //parent
@@ -478,12 +481,6 @@ void Response::respond(void)
 {
     if (_req.done() || _req.bad_request())
     {
-		if (_req.path() == "/upload.html") //move later (dynamic)
-		{
-			cout << "IN HERE" << endl;
-			_req.process_image();
-		}
-
         ssize_t total_to_send = _entireText.length();
 		cout << "total to send :" << total_to_send << endl;
 
