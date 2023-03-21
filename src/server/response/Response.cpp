@@ -74,27 +74,30 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 			build_error_body();
 		build_header();
 		_entireText = _entireHeader + _entireBody;
-		cout << "Where are you now???" << endl;
 	}
 	if (_req.type() == "DELETE")
 	{
 		int	status;
 		string full_path = get_full_path();
-		cout << "YESBROOOO I AM HEREEE" << endl;
 		cout << "full path is: " << full_path << endl;
 		struct stat	path;
 		stat(full_path.c_str(), &path);
 
 		if (is_autoindex() && !S_ISREG(path.st_mode))
-		{
 			cout << "It doesn't exist" << endl;
-		}
 		else
-			cout << "It exists" << endl;
-
-		status = remove("temp");
-		if (status == 0)
-			cout << "YAYYY" << endl;
+		{
+			if (full_path == "public/index.html")
+			{
+				cout << "no cannot delete noob" << endl;
+				return ;
+			}
+			status = remove(full_path.c_str());
+			if (status == 0)
+				cout << "Deleted :skull_emoji:" << endl;
+			else
+				cout << "Doesn't exist la" << endl;
+		}
 	}
 }
 
