@@ -79,21 +79,26 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 		struct stat	path;
 		stat(full_path.c_str(), &path);
 
-		if (is_autoindex() && !S_ISREG(path.st_mode))
-			cout << "It doesn't exist" << endl;
+		if (!has_allowed_method(_req.type()))
+		{
+			Log(INFO, "Method not allowed");
+			_error_code = 405;
+		}
 		else
 		{
-			if (full_path == "public/index.html")
-			{
-				cout << "no cannot delete noob" << endl;
-				return ;
-			}
 			status = remove(full_path.c_str());
 			if (status == 0)
-				cout << "Deleted :skull_emoji:" << endl;
+				Log(INFO, "File has been deleted 💀");
 			else
-				cout << "Doesn't exist la" << endl;
+			{
+				_error_code = 204;
+				Log(INFO, "File to delete doesn't exists 🤰");
+			}
 		}
+		if (_error_code != 0)
+			build_error_body();
+		build_header();
+		_entireText = _entireHeader + _entireBody;
 	}
 	else if (_req.type() == "POST")
 	{
@@ -149,7 +154,7 @@ string	Response::get_full_path(void)
 				true_root.pop_back();
 			cout << "true_root : " << true_root << endl;
 			cout << "full_path : " << full_path << endl;
-			if (!is_autoindex())
+			if (!is_autoindex() && has_allowed_method(_req.path()))
 			{
 				full_path = get_true_root(location_block_config);
 				if (full_path.back() != '/')
@@ -345,6 +350,39 @@ bool	Response::is_cgi(void) const
 			if (location_block.get_config().find("cgi_pass") == location_block.get_config().end())
 				return (0);
 			return (1);
+		} catch (BaseConfig::ConfigException &e) {
+			return (0);
+		}
+	}
+}
+
+bool	Response::has_allowed_method(const string method) const
+{
+	string location_path = get_location_path();
+	if (location_path == "")
+	{
+		try {
+			_serverConfig.find_normal_directive("allowed_methods"); //TODO add split methods for allowed methods in server block
+			return (1);
+		} catch (BaseConfig::ConfigException &e) {
+			return (0);
+		}
+	}
+	else
+	{
+		try {
+			ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
+
+			if (location_block.get_config().find("allowed_methods") == location_block.get_config().end())
+				return (0);
+			else
+			{
+				std::vector<string> methods = location_block.split_methods();
+				for (std::vector<string>::const_iterator it = methods.begin(); it != methods.end(); it++)
+					if (method == *it)
+						return (1);
+				return (0);
+			}
 		} catch (BaseConfig::ConfigException &e) {
 			return (0);
 		}
