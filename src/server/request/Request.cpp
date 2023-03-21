@@ -94,14 +94,14 @@ void Request::parse_headers()
 
 void    Request::process_post()
 {
-    if (_headers.find("Content-Length") == _headers.end() || !isNumber(_headers["Content-Length"]))
+	if (_headers.find("Transfer-Encoding") != _headers.end() && _headers["Transfer-Encoding"] == string("chunked"))
+        _chunked = true;
+	else if (_headers.find("Content-Length") == _headers.end() || !isNumber(_headers["Content-Length"]))
     {
 		cout << "no content length found" << endl;
         _is_done = true; //this changes to error_code
-        return ;
     }
-	
-    if (std::stoi(_headers["Content-Length"]) >= 1
+    else if (std::stoi(_headers["Content-Length"]) >= 1
         && _body.size() == std::stoul(_headers["Content-Length"]))
         _is_done = true;
 }
@@ -278,17 +278,14 @@ void	Request::read_header(string request_string)
 
     parse_headers();
     if (type() == "POST")
-	{
-		cout << "IN POST" << endl;
         process_post();
-	}
     if (type() == "GET" || type() == "DELETE")
         _is_done = true;
 }
 
 Request::Request(string request_string, int socket) :
 	_body(""), _socket(socket),
-	_is_done(false), _header_done(false), _bad_request(false)
+	_is_done(false), _header_done(false), _bad_request(false), _chunked(false)
 {
 #ifdef PRINT_MSG
 	cout << "Request Assignment Constructor called" << endl;
@@ -338,17 +335,34 @@ const string    Request::to_str() const
     return (ret);
 }
 
+string  Request::process_chunk(string buffer)
+{
+	int chars_to_read;
+	cout << "CHUNK IS:" << buffer << endl;
+	cout << "READING FROM CHUNK " << buffer.substr(0, buffer.find("\r\n")) << endl;
+
+	chars_to_read = std::stoi(buffer.substr(0, buffer.find("\r\n")).c_str());
+	buffer = buffer.substr(buffer.find("\r\n") + 2, chars_to_read);
+	if (chars_to_read == 0 && buffer.length() == 0)
+		_is_done = true;
+	cout << "UNCHUNKED MESSAGE:" << buffer <<endl;
+	return (buffer);
+}
+
 void  Request::add_body(string buffer)
 {
     if (type() != "POST")
         return ;
-    if (_headers.find("Content-Length") == _headers.end())
+	
+	if (is_chunked())
+		buffer = process_chunk(buffer);
+    else if (_headers.find("Content-Length") == _headers.end())
         return ;
-    /* if (std::stoul(_headers["Content-Length"]) == _body.size()) */
-    /*     _is_done = true; */
+
     for (string::iterator it = buffer.begin(); it != buffer.end(); it++)
         _body.push_back(*it);
-    if (std::stoul(_headers["Content-Length"]) == _body.size())
+	
+    if (!is_chunked() && std::stoul(_headers["Content-Length"]) == _body.size())
         _is_done = true;
 	cout << _body.length() << endl;
 }
@@ -365,19 +379,20 @@ std::ostream &operator<<(std::ostream &os, const webserv::Request &request)
 }
 
 
-bool      Request::done() { return _is_done; }
+bool			Request::done() { return _is_done; }
 
-bool      Request::header_done() { return _header_done; }
+bool			Request::header_done() { return _header_done; }
 
-bool	  Request::bad_request() { return _bad_request; }
+bool			Request::bad_request() { return _bad_request; }
 
-string    &Request::body() { return _body; }
+bool			Request::is_chunked() const {return _chunked; }
 
-const string &Request::type() const { return _type; }
+string			&Request::body() { return _body; }
 
-const string &Request::path() const { return _path; }
+const string	&Request::type() const { return _type; }
 
-const int   &Request::socket() const { return _socket; }
+const string	&Request::path() const { return _path; }
 
+const int		&Request::socket() const { return _socket; }
 
-const string &Request::protocol_version() const { return _protocol_version; }
+const string	&Request::protocol_version() const { return _protocol_version; }

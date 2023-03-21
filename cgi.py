@@ -10,15 +10,23 @@ import select
 print('<!DOCTYPE html>')
 print(f'<h1>DIS THE CGI PAGE BOI</h1>')
 print(f"<p>____STDIN____</p>")
-flag = 0
+save = []
 if select.select([sys.stdin, ], [], [], 0.0)[0]:
     for something in sys.stdin:
-        if (str(something).startswith('Content-Disposition: form-data; name="filename"')):
+        save.append(something)
+
+if (any("WebKitFormBoundary" in string for string in save)):
+    flag = 0
+    for line in save:
+        if (str(line).startswith('Content-Disposition: form-data; name="filename"')):
             flag = 1
-        elif (flag == 1 and str(something).startswith('------WebKitFormBoundary')):
+        elif (flag == 1 and str(line).startswith('------WebKitFormBoundary')):
             flag = 0
         elif (flag):
-            print(f"<p>{something}</p>")
+            print(f"<p>{line}</p>")
+else:
+    for line in save:
+        print(line)
 print(f"<p>_____________</p>")
 print(f"<p>PATH_INFO: {os.getenv('PATH_INFO')}</p>")
 print(f"<p>QUERY_STRING: {os.getenv('QUERY_STRING')}</p>")

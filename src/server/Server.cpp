@@ -196,8 +196,8 @@ void	Server::launch()
 
     while(1)
     {
-		Log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size())));
-		Log(DEBUG, (string("Total amount of polls open : ") + to_string(_poll_fds.size())));
+		// Log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size())));
+		// Log(DEBUG, (string("Total amount of polls open : ") + to_string(_poll_fds.size())));
 		int poll_rv = poll(_poll_fds.data(), _poll_fds.size(), 100);
 		if (poll_rv < 0)
 		{
@@ -210,9 +210,9 @@ void	Server::launch()
 			sockets_type::iterator	server = _server_sockets.find(curr_poll->fd); //finds server
 
 			
-			if (server == _server_sockets.end() && ++_timeout[curr_poll->fd] > 10)
+			if (server == _server_sockets.end() && ++_timeout[curr_poll->fd] > 100) // TODO: add 0.1 instead for time out
 			{
-				cout << "Client: " << curr_poll->fd << " timeout: " << _timeout[curr_poll->fd] << "s";
+				Log(WARN, string("Client: " + to_string(curr_poll->fd) + " timeout: " + to_string(_timeout[curr_poll->fd]) + "s"));
 				remove_client(curr_poll->fd, i);
 				continue;
 			}
