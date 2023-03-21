@@ -33,7 +33,7 @@ const char *valid_server_normal_directives_array[] = {"listen",
 	"error_log", "location", "root", "error_page", "index", "autoindex"};
 
 const char *valid_server_location_directives_array[] = {"cgi_pass",
-	"root", "allowed_methods", "autoindex", "index"};
+	"root", "allowed_methods", "autoindex", "index", "return"};
 
 ServerConfigParser::ServerConfigParser(const string &config_str) : _config_str(config_str)
 {

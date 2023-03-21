@@ -50,6 +50,8 @@ namespace webserv
 
 		string	get_location_path(void) const;
 		bool		is_autoindex(void) const;
+		bool		is_redirect(void) const;
+		string	get_redirected_path(void) const;
 		bool	is_cgi(void) const;
 		bool	is_file(const string path) const;
 		bool	check_file_status(const string path) const;
