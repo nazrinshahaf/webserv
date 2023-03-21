@@ -63,7 +63,10 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 		if (is_autoindex() && !is_file(full_path))
 			_entireBody = handle_auto_index(full_path);
 		else if (is_cgi())
+		{
+			Log(DEBUG, "PROCESS IS CGI");
 			_entireBody = process_cgi(full_path);
+		}
 		else
 			read_file(full_path);
 		if (_error_code != 0)
@@ -75,6 +78,7 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 	{
 		string	full_path = get_full_path();
 
+		Log(DEBUG, "POST IS CGI");
 		if (is_cgi())
 			_entireText = process_cgi(full_path);
 		else
@@ -407,11 +411,11 @@ string Response::process_cgi(const string cgi_path)
 		Log(ERROR, "CGI path " + cgi_path + " cant be opened", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 		return (string());
 	}
-
 	pid_t i = fork();
 	if (i == 0) //child
 	{
 		std::vector<std::string>  s;
+		/* s.push_back("/opt/homebrew/opt/python@3.9/libexec/bin/python3"); */
 		s.push_back("/usr/bin/python3");
 		s.push_back(cgi_path); //dynamic if file exists 404 if not
 
@@ -444,6 +448,7 @@ string Response::process_cgi(const string cgi_path)
 		close(fd[1]);
 		close(fd[0]);
 		execve("/usr/bin/python3", commands.data(), create_new_envp(query_string, path_info, _envp));
+		/* execve("/opt/homebrew/opt/python@3.9/libexec/bin/python3", commands.data(), create_new_envp(query_string, path_info, _envp)); */
 		exit(1);
 	}
 	else if (i > 0) //parent
