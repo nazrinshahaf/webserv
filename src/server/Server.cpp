@@ -137,7 +137,7 @@ int	Server::receiver(const int &client_fd)
 	cout << "header_done :" << _requests[client_fd].header_done() << endl;
 	cout << "type :" << _requests[client_fd].type() << endl;
 	cout << "bad_request :" << _requests[client_fd].bad_request() << endl;
-	if ((_requests[client_fd].header_done() && _requests[client_fd].type() == "GET") ||
+	if ((_requests[client_fd].header_done() && (_requests[client_fd].type() == "GET" || _requests[client_fd].type() == "DELETE")) ||
 		(_requests[client_fd].done() && _requests[client_fd].type() == "POST") ||
 			_requests[client_fd].bad_request())
 	{

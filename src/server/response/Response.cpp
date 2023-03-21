@@ -74,6 +74,27 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 			build_error_body();
 		build_header();
 		_entireText = _entireHeader + _entireBody;
+		cout << "Where are you now???" << endl;
+	}
+	if (_req.type() == "DELETE")
+	{
+		int	status;
+		string full_path = get_full_path();
+		cout << "YESBROOOO I AM HEREEE" << endl;
+		cout << "full path is: " << full_path << endl;
+		struct stat	path;
+		stat(full_path.c_str(), &path);
+
+		if (is_autoindex() && !S_ISREG(path.st_mode))
+		{
+			cout << "It doesn't exist" << endl;
+		}
+		else
+			cout << "It exists" << endl;
+
+		status = remove("temp");
+		if (status == 0)
+			cout << "YAYYY" << endl;
 	}
 }
 
@@ -262,6 +283,32 @@ int		Response::is_autoindex(void) const
 		}
 	}
 }
+
+// bool	Response::has_allowed_methods(const string &method) const
+// {
+// 	string location_path = get_location_path();
+// 	if (location_path == "")
+// 	{
+// 		try {
+// 			_serverConfig.find_normal_directive("allowed_methods");
+// 			return (1);
+// 		} catch (BaseConfig::ConfigException &e) {
+// 			return (0);
+// 		}
+// 	}
+// 	else
+// 	{
+// 		try {
+// 			ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
+
+// 			if (location_block.get_config().find("allowed_methods") == location_block.get_config().end())
+// 				return (0);
+// 			return (1);
+// 		} catch (BaseConfig::ConfigException &e) {
+// 			return (0);
+// 		}
+// 	}
+// }
 
 /* void	Response::handle_location_block(void) */
 /* { */
