@@ -27,6 +27,7 @@ if (any("WebKitFormBoundary" in string for string in save)):
 else:
     for line in save:
         print(line)
+
 print(f"<p>_____________</p>")
 print(f"<p>PATH_INFO: {os.getenv('PATH_INFO')}</p>")
 print(f"<p>QUERY_STRING: {os.getenv('QUERY_STRING')}</p>")

@@ -12,6 +12,9 @@ CONCURRENT_THREADS = 1000
 def send_api_request():
     print ('Sending API request: ', ENDPOINT)
     r = requests.get(ENDPOINT)
+    if (r.status_code != 200):
+        print ('Received Wrong Status Code')
+        exit(1)
     print ('Received: ', r.status_code)
 
 start_time = datetime.datetime.now()

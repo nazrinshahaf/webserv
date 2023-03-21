@@ -101,107 +101,107 @@ void    Request::process_post()
 		cout << "no content length found" << endl;
         _is_done = true; //this changes to error_code
     }
-    else if (std::stoi(_headers["Content-Length"]) >= 1
-        && _body.size() == std::stoul(_headers["Content-Length"]))
-        _is_done = true;
+	else if (std::stoi(_headers["Content-Length"]) >= 1
+			&& _body.size() == std::stoul(_headers["Content-Length"]))
+		_is_done = true;
 }
 
-static string find_filename(string line)
-{
-    string temp = line;
-    string data = "";
-    std::map<string, string> temp_dict;
+/* static string find_filename(string line) */
+/* { */
+/*     string temp = line; */
+/*     string data = ""; */
+/*     std::map<string, string> temp_dict; */
+/*  */
+/*     while (temp.size() > 0) */
+/*     { */
+/*         if (temp.find("; ") == string::npos){ */
+/*             data = temp; */
+/*             temp = temp.erase(0, data.length()); */
+/*         } */
+/*         else{ */
+/*             data = temp.substr(0, temp.find("; ") + 1); */
+/*             temp = temp.erase(0, data.length() + 1); */
+/*         } */
+/*         if (temp.size() >= 2 && temp[0] == '\r' && temp[1] == '\n') */
+/*             break; */
+/*         if (data.find("=") != string::npos) */
+/*         { */
+/*             string key = data.substr(0, data.find("=")); */
+/*             string value = data.substr(data.find("=") + 1, (data.length() - data.find("="))); */
+/*             value.erase(std::remove(value.begin(), value.end(), '"'), value.end()); */
+/*             value.erase(std::remove(value.begin(), value.end(), ';'), value.end()); */
+/*             temp_dict[key] = value; */
+/*         } */
+/*     } */
+/*     if (temp_dict.find("filename") != temp_dict.end()) */
+/*         return (temp_dict.find("filename")->second); */
+/*     return ("nofilename"); */
+/* } */
 
-    while (temp.size() > 0)
-    {
-        if (temp.find("; ") == string::npos){
-            data = temp;
-            temp = temp.erase(0, data.length());
-        }
-        else{
-            data = temp.substr(0, temp.find("; ") + 1);
-            temp = temp.erase(0, data.length() + 1);
-        }
-        if (temp.size() >= 2 && temp[0] == '\r' && temp[1] == '\n')
-            break;
-        if (data.find("=") != string::npos)
-        {
-            string key = data.substr(0, data.find("="));
-            string value = data.substr(data.find("=") + 1, (data.length() - data.find("=")));
-            value.erase(std::remove(value.begin(), value.end(), '"'), value.end());
-            value.erase(std::remove(value.begin(), value.end(), ';'), value.end());
-            temp_dict[key] = value;
-        }
-    }
-    if (temp_dict.find("filename") != temp_dict.end())
-        return (temp_dict.find("filename")->second);
-    return ("nofilename");
-}
-
-void    Request::process_image()
-{
-    if (_headers.find("Content-Type") == _headers.end())
-        return ;
-
-    if (_headers["Content-Type"].find("multipart/form-data;") == 0)
-    {
-        string boundary;
-        string body = _body;
-        std::vector<string> datas;
-
-        boundary = "--" + _headers["Content-Type"].substr(_headers["Content-Type"].find("=") + 1, 38);
-        while (body.find(boundary) != string::npos)
-        {
-            string data = body.substr(boundary.length() + 2, body.find(boundary, 1) - boundary.length() - 2);
-            body = body.erase(0, boundary.length() + data.length() + 2);
-            datas.push_back(data);
-        }
-
-        for (std::vector<string>::iterator data = datas.begin(); data != datas.end(); data++)
-        {
-            string headers = *data;
-            std::map<string, string> temp_dict;
-
-			/* cout << "START: <" << *data << ">" << endl; */
-			/* cout << "data length : " << data->length() << endl; */
-
-            while (headers.find("\r\n") != string::npos)
-            {
-                string line =  (headers.substr(0, headers.find("\r\n")));
-                if (line.find(":") != string::npos)
-                {
-                    string key = (line).substr(0, (line).find(" ") - 1);
-                    string value = (line).substr((line).find(" ") + 1, (line).size() - (line).find(" ") - 1);
-					/* cout << "Key : [" << key << "]" << endl; */
-					/* cout << "value : [" << value << "]" << endl; */
-                    temp_dict[key] = value;
-                }
-                headers = headers.erase(0, headers.find("\r\n") + 2);
-                if (headers.size() >= 2 && headers[0] == '\r' && headers[1] == '\n') {
-                    temp_dict["body"] = headers.substr(2, headers.length() - 4);
-                    break;
-                }
-            }
-
-			/* if (temp_dict.find("Content-Type") != temp_dict.end()) */
-			/* { */
-			/* 	cout << "CT : " << "[" << temp_dict.find("Content-Type")->first << "]" << endl; */
-			/* 	cout << "CTV: " << "[" << temp_dict.find("Content-Type")->second<< "]"  << endl; */
-			/* } */
-
-            if (temp_dict.find("Content-Type") != temp_dict.end())
-            {
-				cout << "doing something" << endl;
-				cout << "writing length : " << temp_dict["body"].length() << endl;
-				/* cout << "SENT :" << temp_dict["body"] << endl; */
-                string filename = find_filename(temp_dict["Content-Disposition"]);
-                std::ofstream out(filename);
-                out << temp_dict["body"];
-                out.close();
-            }
-        }
-    }
-}
+///* void    Request::process_image() */
+///* { */
+///*     if (_headers.find("Content-Type") == _headers.end()) */
+///*         return ; */
+///*  */
+///*     if (_headers["Content-Type"].find("multipart/form-data;") == 0) */
+///*     { */
+///*         string boundary; */
+///*         string body = _body; */
+///*         std::vector<string> datas; */
+///*  */
+///*         boundary = "--" + _headers["Content-Type"].substr(_headers["Content-Type"].find("=") + 1, 38); */
+///*         while (body.find(boundary) != string::npos) */
+///*         { */
+///*             string data = body.substr(boundary.length() + 2, body.find(boundary, 1) - boundary.length() - 2); */
+///*             body = body.erase(0, boundary.length() + data.length() + 2); */
+///*             datas.push_back(data); */
+///*         } */
+///*  */
+///*         for (std::vector<string>::iterator data = datas.begin(); data != datas.end(); data++) */
+///*         { */
+///*             string headers = *data; */
+///*             std::map<string, string> temp_dict; */
+///*  */
+///* 			/* cout << "START: <" << *data << ">" << endl; */ */
+///* 			/* cout << "data length : " << data->length() << endl; */ */
+///*  */
+///*             while (headers.find("\r\n") != string::npos) */
+///*             { */
+///*                 string line =  (headers.substr(0, headers.find("\r\n"))); */
+///*                 if (line.find(":") != string::npos) */
+///*                 { */
+///*                     string key = (line).substr(0, (line).find(" ") - 1); */
+///*                     string value = (line).substr((line).find(" ") + 1, (line).size() - (line).find(" ") - 1); */
+///* 					/* cout << "Key : [" << key << "]" << endl; */ */
+///* 					/* cout << "value : [" << value << "]" << endl; */ */
+///*                     temp_dict[key] = value; */
+///*                 } */
+///*                 headers = headers.erase(0, headers.find("\r\n") + 2); */
+///*                 if (headers.size() >= 2 && headers[0] == '\r' && headers[1] == '\n') { */
+///*                     temp_dict["body"] = headers.substr(2, headers.length() - 4); */
+///*                     break; */
+///*                 } */
+///*             } */
+///*  */
+///* 			/* if (temp_dict.find("Content-Type") != temp_dict.end()) */ */
+///* 			/* { */
+///* 			/* 	cout << "CT : " << "[" << temp_dict.find("Content-Type")->first << "]" << endl; */ */
+///* 			/* 	cout << "CTV: " << "[" << temp_dict.find("Content-Type")->second<< "]"  << endl; */ */
+///* 			/* } */
+///*  */
+///*             if (temp_dict.find("Content-Type") != temp_dict.end()) */
+///*             { */
+///* 				cout << "doing something" << endl; */
+///* 				cout << "writing length : " << temp_dict["body"].length() << endl; */
+///* 				/* cout << "SENT :" << temp_dict["body"] << endl; */ */
+///*                 string filename = find_filename(temp_dict["Content-Disposition"]); */
+///*                 std::ofstream out(filename); */
+///*                 out << temp_dict["body"]; */
+///*                 out.close(); */
+///*             } */
+///*         } */
+///*     } */
+///* } */
 
 void	Request::read_header(string request_string)
 {
@@ -351,19 +351,19 @@ string  Request::process_chunk(string buffer)
 
 void  Request::add_body(string buffer)
 {
-    if (type() != "POST")
-        return ;
-	
+	if (type() != "POST")
+		return ;
+
 	if (is_chunked())
 		buffer = process_chunk(buffer);
-    else if (_headers.find("Content-Length") == _headers.end())
-        return ;
+	else if (_headers.find("Content-Length") == _headers.end())
+		return ;
 
-    for (string::iterator it = buffer.begin(); it != buffer.end(); it++)
-        _body.push_back(*it);
-	
-    if (!is_chunked() && std::stoul(_headers["Content-Length"]) == _body.size())
-        _is_done = true;
+	for (string::iterator it = buffer.begin(); it != buffer.end(); it++)
+		_body.push_back(*it);
+
+	if (!is_chunked() && std::stoul(_headers["Content-Length"]) == _body.size())
+		_is_done = true;
 	cout << _body.length() << endl;
 }
 

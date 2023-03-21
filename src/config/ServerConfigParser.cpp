@@ -30,10 +30,11 @@ using namespace webserv;
 const char *valid_base_directives_array[] = {"server"};
 
 const char *valid_server_normal_directives_array[] = {"listen",
-	"error_log", "location", "root", "error_page", "index", "autoindex"};
+	"error_log", "location", "root", "error_page", "index", "autoindex",
+	"client_max_body_size"};
 
 const char *valid_server_location_directives_array[] = {"cgi_pass",
-	"root", "allowed_methods", "autoindex", "index"};
+	"root", "allowed_methods", "autoindex", "index", "client_max_body_size"};
 
 ServerConfigParser::ServerConfigParser(const string &config_str) : _config_str(config_str)
 {

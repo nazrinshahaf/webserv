@@ -42,6 +42,8 @@ namespace webserv
 		bool 	path_includes_cgi(void);
 		
 		string	process_cgi(const string cgi_path);
+		string	process_image(string *file_name);
+		void	save_image(const string file_name);
 		string	get_full_path(void);
 		string	get_true_root(const ServerLocationDirectiveConfig::map_type &location_block_config) const;
 		string	get_true_index(const ServerLocationDirectiveConfig::map_type &location_block_config) const;
@@ -49,10 +51,12 @@ namespace webserv
 		string	find_path_info();
 
 		string	get_location_path(void) const;
-		bool		is_autoindex(void) const;
+		bool	is_autoindex(void) const;
 		bool	is_cgi(void) const;
 		bool	is_file(const string path) const;
 		bool	check_file_status(const string path) const;
+		bool	has_client_max_body_size(void) const;
+		unsigned long int get_client_max_body_size(void) const;
 
     public:
         Response();
