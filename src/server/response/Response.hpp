@@ -54,6 +54,7 @@ namespace webserv
 		string	get_redirected_path(void) const;
 		bool	is_cgi(void) const;
 		bool	is_file(const string path) const;
+		bool	has_allowed_method(const string method) const;
 		bool	check_file_status(const string path) const;
 
     public:
