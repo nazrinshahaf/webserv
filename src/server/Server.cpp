@@ -210,9 +210,13 @@ void	Server::launch()
 			sockets_type::iterator	server = _server_sockets.find(curr_poll->fd); //finds server
 
 			
+<<<<<<< HEAD
 			if (server == _server_sockets.end() && ++_timeout[curr_poll->fd] > 1000)
+=======
+			if (server == _server_sockets.end() && ++_timeout[curr_poll->fd] > 100) // TODO: add 0.1 instead for time out
+>>>>>>> origin/master
 			{
-				cout << "Client: " << curr_poll->fd << " timeout: " << _timeout[curr_poll->fd] << "s";
+				Log(WARN, string("Client: " + to_string(curr_poll->fd) + " timeout: " + to_string(_timeout[curr_poll->fd]) + "s"));
 				remove_client(curr_poll->fd, i);
 				continue;
 			}

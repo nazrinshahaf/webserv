@@ -24,12 +24,14 @@ namespace webserv
 			bool						_is_done;
 			bool						_header_done;
 			bool						_bad_request; //change to int
+			bool						_chunked;
 
 			int							find_request_type();
 			void						find_request_path();
 			void						find_request_protocol_version();
 			void						parse_headers();
 			void						process_post();
+			string						process_chunk(string buffer);
 
 		public:
 			/**
@@ -51,6 +53,7 @@ namespace webserv
 			const int						&socket() const;
 			const string					to_str() const;
 			bool							bad_request();
+			bool							is_chunked() const;
 			bool							done();
 			bool							header_done();
 			void							add_body(string buffer);
