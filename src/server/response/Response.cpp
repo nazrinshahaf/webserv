@@ -55,19 +55,15 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 
 	if (_req.type() == "GET")
 	{
-		if (path_includes_cgi())
-			return ;
 		string full_path = get_full_path();
 
 		/* Log(WARN, "Auto index = " + std::to_string(is_autoindex())); */
-		struct stat	path;
-		stat(full_path.c_str(), &path);
+		cout << "full_path : " << full_path << endl;
 
-		if (is_autoindex() && !S_ISREG(path.st_mode))
-		{
-			/* cout << "full path before autoindex : " << full_path << endl; */
+		if (is_autoindex() && !is_file(full_path))
 			_entireBody = handle_auto_index(full_path);
-		}
+		else if (is_cgi())
+			_entireBody = process_cgi(full_path);
 		else
 			read_file(full_path);
 		if (_error_code != 0)
@@ -75,7 +71,7 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 		build_header();
 		_entireText = _entireHeader + _entireBody;
 	}
-	if (_req.type() == "DELETE")
+	else if (_req.type() == "DELETE")
 	{
 		int	status;
 		string full_path = get_full_path();
@@ -99,6 +95,16 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 				cout << "Doesn't exist la" << endl;
 		}
 	}
+	else if (_req.type() == "POST")
+	{
+		string	full_path = get_full_path();
+
+		if (is_cgi())
+			_entireText = process_cgi(full_path);
+		if (_error_code != 0)
+			build_error_body();
+		build_header();
+	}
 }
 
 Response::~Response()
@@ -112,14 +118,10 @@ string	Response::get_full_path(void)
 	string	location_path = get_location_path();
 
 	string	is_url_file = _root_path + _req.path();
-	struct stat	dir_stat;
-	/* cout << "CHEKC IF FILE IS ACTUAL :" << is_url_file<< endl; */
-	if (stat(is_url_file.c_str(), &dir_stat) == 0) //if successfully stat
+	if (is_file(is_url_file))
 	{
-		if (dir_stat.st_mode & S_IFREG) //if file and not dir
-			return (is_url_file);
-		else
-			Log(WARN, "FILE IS DIR");
+		Log(DEBUG, "url is file");
+		return (is_url_file);
 	}
 
 	/* Log(DEBUG, "Location path : " + location_path); */
@@ -137,34 +139,26 @@ string	Response::get_full_path(void)
 		try {
 			ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
 			ServerLocationDirectiveConfig::map_type	location_block_config = location_block.get_config();
-			/* Log(DEBUG, "URL path is a location"); */
+			Log(DEBUG, "URL path is a location");
 
 			full_path = _req.path();
 			string true_root = get_true_root(location_block_config);
-			/* cout << full_path << endl; */
-			/* cout << location_path << endl; */
+			cout << "url_path : " << full_path << endl;
+			cout << "location_path : " << location_path << endl;
 			if (true_root.back() == '/')
 				true_root.pop_back();
-			/* cout << true_root << endl; */
+			cout << "true_root : " << true_root << endl;
+			cout << "full_path : " << full_path << endl;
+			if (!is_autoindex())
+			{
+				full_path = get_true_root(location_block_config);
+				if (full_path.back() != '/')
+					full_path += "/";
+				full_path += get_true_index(location_block_config);
+				return (full_path);
+			}
+			cout << "full_path with index : " << full_path << endl;
 			utils::replaceAll(full_path, location_path, true_root);
-			/* cout << "full_path : " << full_path << endl; */
-
-			//full_path = get_true_root(location_block_config);
-			//Log(WARN, "get true root in location: " + full_path);
-			//if (location_path == _req.path())
-			//	return (full_path);
-			///* if (is_autoindex()) //if autoindex */
-			///* { */
-			///* 	if (_req.path().back() == '/') */
-			///* 		full_path.append(_req.path().substr(location_path.length() + 1)); */
-			///* 	else */
-			///* 		full_path.append(_req.path().substr(location_path.length())); */
-			///* 	Log(WARN, "full path if autoindex : " + full_path); */
-			///* 	return full_path; */
-			///* } */
-			//full_path += "/" + get_true_index(location_block_config);
-			//Log(DEBUG, "full_path : " + full_path);
-			/* read_file(full_path); */
 		} catch (BaseConfig::ConfigException &e) { //no location just search root directory
 			Log(ERROR, "URL path is not location (i dont think the error should show up here)", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 		}
@@ -172,9 +166,7 @@ string	Response::get_full_path(void)
 	else
 	{
 		full_path += _serverConfig.find_normal_directive("root").get_value();
-		Log(WARN, "true root in defualt : " + full_path);
 		full_path += _req.path();
-		/* read_file(full_path); */
 	}
 	return (full_path);
 }
@@ -215,62 +207,19 @@ string	Response::get_location_path(void) const
 			if (path.length() > longest_match.length())
 				longest_match = path;
 	}
-
-	//struct stat	dir_stat;
-
-	//cout << "_req.path() :" << _req.path().c_str() << endl;
-	//string full_path = _root_path + _req.path();
-	//cout << "full_path = " << full_path << endl;
-	//if (stat(full_path.c_str(), &dir_stat) == 0) //if successfully stat
-	//{
-	//	if (dir_stat.st_mode & S_IFDIR) //if file and not dir
-	//	{
-	//		Log(WARN, "File is dir");
-	//	}
-	//	else
-	//	{
-	//		Log(WARN, "FIle is not dir");
-	//		return (string());
-	//	}
-	//}
-	//else
-	//{
-	//	cout << std::strerror(errno) << endl;
-	//	/* Log(ERROR, "BAD ERROR"); */
-	//}
-	//Log(WARN, "longest_match = " + longest_match);
 	return (longest_match);
 }
 
-/* int		Response::is_location_block(void) const */
-/* { */
-/* 	pair<ServerConfig::cit_t, ServerConfig::cit_t> range = _serverConfig.find_values("location"); */
-/*  */
-/* 	string longest_match; */
-/* 	for (ServerConfig::cit_t locations = range.first; locations != range.second; locations++) */
-/* 	{ */
-/* 		ServerLocationDirectiveConfig l = dynamic_cast<ServerLocationDirectiveConfig&>(*locations->second); */
-/*  */
-/* 		string path = l.get_path(); */
-/* 		if (_req.path().find(path) == 0) */
-/* 			if (path.length() > longest_match.length()) */
-/* 				longest_match = path; */
-/* 	} */
-/* 	if (longest_match.length() > 0) */
-/* 		return 1; */
-/* 	return (0); */
-/* } */
-
-int		Response::is_autoindex(void) const
+bool	Response::is_autoindex(void) const
 {
 	string location_path = get_location_path();
 	if (location_path == "")
 	{
 		try {
 			_serverConfig.find_normal_directive("autoindex");
-			return (1);
+			return (true);
 		} catch (BaseConfig::ConfigException &e) {
-			return (0);
+			return (false);
 		}
 	}
 	else
@@ -279,79 +228,13 @@ int		Response::is_autoindex(void) const
 			ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
 
 			if (location_block.get_config().find("autoindex") == location_block.get_config().end())
-				return (0);
-			return (1);
+				return (false);
+			return (true);
 		} catch (BaseConfig::ConfigException &e) {
-			return (0);
+			return (false);
 		}
 	}
 }
-
-// bool	Response::has_allowed_methods(const string &method) const
-// {
-// 	string location_path = get_location_path();
-// 	if (location_path == "")
-// 	{
-// 		try {
-// 			_serverConfig.find_normal_directive("allowed_methods");
-// 			return (1);
-// 		} catch (BaseConfig::ConfigException &e) {
-// 			return (0);
-// 		}
-// 	}
-// 	else
-// 	{
-// 		try {
-// 			ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
-
-// 			if (location_block.get_config().find("allowed_methods") == location_block.get_config().end())
-// 				return (0);
-// 			return (1);
-// 		} catch (BaseConfig::ConfigException &e) {
-// 			return (0);
-// 		}
-// 	}
-// }
-
-/* void	Response::handle_location_block(void) */
-/* { */
-/* 	string	full_path; */
-/* 	//if req path is default */
-/* 	if (_req.path() == "/") */
-/* 		cout << "Server Default" << endl; */
-/*  */
-/* 	//check if req path is a location block. */
-/* 	try { */
-/* 		ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(_req.path()); */
-/* 		ServerLocationDirectiveConfig::map_type	location_block_config = location_block.get_config(); */
-/* 		Log(DEBUG, "URL path is a location"); */
-/*  */
-/* 		full_path = get_true_root(location_block_config) + "/"; */
-/* 		if (is_autoindex() == 1) //if autoindex */
-/* 		{ */
-/* 			_entireBody += handle_auto_index(full_path); */
-/* 			return ; */
-/* 		} */
-/* 		Log(WARN, "full_path : " + full_path); */
-/* 		full_path += get_true_index(location_block_config); */
-/* 		Log(WARN, "full_path : " + full_path); */
-/* 		read_file(full_path); */
-/* 	} catch (BaseConfig::ConfigException &e) { //no location just search root directory */
-/* 		Log(DEBUG, "URL path is not location"); */
-/* 	} */
-/* } */
-/*  */
-/* void	Response::handle_default_block(void) */
-/* { */
-/* 	string	full_path; */
-/*  */
-/* 	full_path += _serverConfig.find_normal_directive("root").get_value(); */
-/* 	if (_req.path() == "/" || _req.path() == "") */
-/* 		full_path += "/" + _serverConfig.find_normal_directive("index").get_value(); */
-/* 	else */
-/* 		full_path += _req.path(); */
-/* 	read_file(full_path); */
-/* } */
 
 void	Response::build_header(void)
 {
@@ -442,6 +325,48 @@ bool Response::path_includes_cgi(void)
 	return false;
 }
 
+bool	Response::is_cgi(void) const
+{
+	string location_path = get_location_path();
+	if (location_path == "")
+	{
+		try {
+			_serverConfig.find_normal_directive("cgi_pass");
+			return (1);
+		} catch (BaseConfig::ConfigException &e) {
+			return (0);
+		}
+	}
+	else
+	{
+		try {
+			ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
+
+			if (location_block.get_config().find("cgi_pass") == location_block.get_config().end())
+				return (0);
+			return (1);
+		} catch (BaseConfig::ConfigException &e) {
+			return (0);
+		}
+	}
+}
+
+bool	Response::is_file(const string path) const
+{
+	struct stat	file;
+	stat(path.c_str(), &file);
+
+	return (S_ISREG(file.st_mode));
+}
+
+bool	Response::check_file_status(const string path) const
+{
+	struct stat	dir_stat;
+	if (stat(path.c_str(), &dir_stat) == -1) //if cgi file cant be opened
+		return (1);
+	return (0);
+}
+
 string	Response::find_query_string()
 {
 	//TODO: dynamically find cgi path
@@ -491,26 +416,33 @@ char	**create_new_envp(string query_string, string path_info, char **envp)
 	return new_envp;
 }
 
-string Response::process_cgi(void)
+string Response::process_cgi(const string cgi_path)
 {
 	cout << "ENTERED CGI PATH" << endl;
 	string entireText = "";
 	int		fd[2];
 	char	execve_buffer[100000];
 	pipe(fd);
+
+	if (check_file_status(cgi_path) == 1) //if file err
+	{
+		Log(ERROR, "CGI path " + cgi_path + " cant be opened", __LINE__, __PRETTY_FUNCTION__, __FILE__);
+		return (string());
+	}
+
 	pid_t i = fork();
 	if (i == 0) //child
 	{
 		std::vector<std::string>  s;
-		s.push_back("/usr/local/bin/python3");
-		s.push_back("cgi.py");
+		s.push_back("/usr/bin/python3");
+		s.push_back(cgi_path); //dynamic if file exists 404 if not
 
 		std::vector<char*> commands;
 		for (size_t i = 0; i < s.size(); i++)
 			commands.push_back(const_cast<char*>(s[i].c_str()));
 		commands.push_back(nullptr);
 
-		dprintf(2, "in child\n");
+		/* dprintf(2, "in child\n"); */
 
 		string query_string, path_info;
 
@@ -529,8 +461,6 @@ string Response::process_cgi(void)
 			close(tempfd[1]);
 			close(tempfd[0]);
 		}
-
-		
 		
 		dup2(fd[1], STDOUT_FILENO);
 		close(fd[1]);
@@ -540,52 +470,50 @@ string Response::process_cgi(void)
 	}
 	else if (i > 0) //parent
 	{
-		dprintf(2, "parent waiting\n");
+		/* dprintf(2, "parent waiting\n"); */
 		if (_req.type() == "POST")
 			std::remove((string("body") + std::to_string(_req.socket())).c_str());
 		close(fd[1]);
 		waitpid(i, NULL, 0);
-		dprintf(2, "parent done waiting\n");
+		/* dprintf(2, "parent done waiting\n"); */
 		int test = read(fd[0], execve_buffer, 99999);
 		close(fd[0]);
-		dprintf(2, "\t\t--BEFORE---\n");
-		dprintf(2, "%s", entireText.c_str());
-		dprintf(2, "\t\t-----\n");
-		dprintf(2, "read count = [%d]\n", test);
-		// dprintf(2, "execve buffer = [%s]\n", execve_buffer);
+		/* dprintf(2, "\t\t--BEFORE---\n"); */
+		/* dprintf(2, "%s", entireText.c_str()); */
+		/* dprintf(2, "\t\t-----\n"); */
+		/* dprintf(2, "read count = [%d]\n", test); */
+		/* // dprintf(2, "execve buffer = [%s]\n", execve_buffer); */
 		execve_buffer[test] = '\0';
 		entireText = string(execve_buffer);
-		dprintf(2, "\t\t-----\n");
-		dprintf(2, "%s", entireText.c_str());
-		dprintf(2, "\t\t-----\n");
+		/* dprintf(2, "\t\t-----\n"); */
+		/* dprintf(2, "%s", entireText.c_str()); */
+		/* dprintf(2, "\t\t-----\n"); */
 	}
 	else
 	{
+		Log(ERROR, "Fork Failed", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 		perror("fork failed");
+		_error_code = 500;
 		_exit(3);
 	}
-	return entireText;
+	return (entireText);
 }
 
 void Response::respond(void)
 {
     if (_req.done() || _req.bad_request())
     {
-        if (_req.path() == "/upload.html") //move later
+		if (_req.path() == "/upload.html") //move later (dynamic)
 		{
 			cout << "IN HERE" << endl;
-            _req.process_image();
-		}
-		else if (path_includes_cgi())
-		{
-			_entireText += process_cgi();
+			_req.process_image();
 		}
 
         ssize_t total_to_send = _entireText.length();
 		cout << "total to send :" << total_to_send << endl;
 
 		ssize_t sent = send(_client_fd, _entireText.c_str(), _entireText.length(), 0);
-		cout << sent << endl;
+		cout << "sent : " << sent << endl;
 		if (sent == 0)
 			cout << "SENT IS 0" << endl;
 		if (sent == -1)

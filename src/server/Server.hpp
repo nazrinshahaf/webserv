@@ -87,6 +87,7 @@ namespace webserv
     		map<int, Request>    	_requests;
     		map<int, Response>    	_responses;
 			map<int, int>			_client_server_pair;
+			map<int, int>			_timeout;
 			ServerConfigParser		_config;
 			vector<struct pollfd>	_poll_fds;
 			char					**_envp;

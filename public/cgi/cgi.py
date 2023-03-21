@@ -18,7 +18,7 @@ if select.select([sys.stdin, ], [], [], 0.0)[0]:
         elif (flag == 1 and str(something).startswith('------WebKitFormBoundary')):
             flag = 0
         elif (flag):
-            print(f"<p>{something}</p>")
+            print(f"<p>{something} CGI2</p>")
 print(f"<p>_____________</p>")
 print(f"<p>PATH_INFO: {os.getenv('PATH_INFO')}</p>")
 print(f"<p>QUERY_STRING: {os.getenv('QUERY_STRING')}</p>")
