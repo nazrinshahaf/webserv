@@ -22,7 +22,7 @@ namespace webserv
 	class	Log
 	{
 		public:
-			static const log_level	_base_log_level = WARN;
+			static const log_level	_base_log_level = DEBUG;
 
 			Log(const log_level &level, const string &log_msg,
 					const int &LINE = __LINE__, const char *FUNC = __FILE__, const char *FILE = __FILE__,

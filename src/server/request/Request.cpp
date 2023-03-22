@@ -270,7 +270,7 @@ void	Request::read_header(string request_string)
 
 	if (!header_done())
 	{
-		cout << "HEADER NOT DONE" << endl;
+		/* cout << "HEADER NOT DONE" << endl; */
 		return;
 	}
 
@@ -361,11 +361,11 @@ void  Request::add_body(string buffer)
 		_is_done = true;
     // for (string::iterator it = buffer.begin(); it != buffer.end(); it++)
     //     _body.push_back(*it);
-    _body.append(buffer, buffer.length());
+    _body.append(buffer, 0, buffer.length());
 	
     if (!is_chunked() && std::stoul(_headers["Content-Length"]) == _body.size())
         _is_done = true;
-	cout << _body.length() << endl;
+	cout << "body length : " << _body.length() << endl;
 }
 
 

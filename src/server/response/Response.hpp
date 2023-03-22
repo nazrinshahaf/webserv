@@ -32,6 +32,7 @@ namespace webserv
         bool							_hasText;
 		int								_error_code;
 		char							**_envp;
+		string							_redirected_path;
 
 		string	handle_auto_index(string &path);
 

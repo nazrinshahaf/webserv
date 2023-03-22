@@ -99,7 +99,7 @@ void	Server::acceptor(ListeningSocket &server)
 	new_socket_fd = server.accept_connections();
 	if (new_socket_fd >= 0)
 	{
-		Log(DEBUG, string("Client open with fd : ") + to_string(new_socket_fd),
+		Log(INFO, string("Client open with fd : ") + to_string(new_socket_fd),
 				0, NULL, NULL, 2, server.get_config());
 		Log(INFO, "Client connected with ip : " + server.get_client_ip(),
 				0, NULL, NULL, 2, server.get_config()); //im preety sure this addres needs to be client accept addr if so we might need to make a accept socket ):
@@ -147,7 +147,7 @@ int	Server::receiver(const int &client_fd)
 		(_requests[client_fd].done() && _requests[client_fd].type() == "POST") ||
 			_requests[client_fd].bad_request())
 	{
-		// Log(DEBUG, _requests[client_fd].to_str());
+		Log(INFO, _requests[client_fd].to_str());
 		return (1); //sent full request
 	}
 	return (0); //sent partial request
@@ -213,7 +213,7 @@ void	Server::launch()
 			
 			if (server == _server_sockets.end() && ++_timeout[curr_poll->fd] > 1000)
 			{
-				// Log(WARN, string("Client: " + to_string(curr_poll->fd) + " timeout: " + to_string(_timeout[curr_poll->fd]) + "s"));
+				// Log(DEBUG, string("Client: " + to_string(curr_poll->fd) + " timeout: " + to_string(_timeout[curr_poll->fd]) + "s"));
 				remove_client(curr_poll->fd, i);
 				continue;
 			}
@@ -307,13 +307,13 @@ void	Server::add_servers_to_poll(void)
 		server_poll_to_insert.events = POLLIN;
 		fcntl(server_poll_to_insert.fd, F_SETFL, O_NONBLOCK);
 		_poll_fds.push_back(server_poll_to_insert);
-		Log(DEBUG, (string("Server socket open with fd ") + to_string(server_poll_to_insert.fd)));
+		Log(INFO, (string("Server socket open with fd ") + to_string(server_poll_to_insert.fd)));
 	}
 }
 
 void	Server::remove_client(const int &client_fd, const int &poll_index)
 {
-	Log(DEBUG, (string("Client socket closed with fd ") + to_string(client_fd)));
+	Log(INFO, (string("Client socket closed with fd ") + to_string(client_fd)));
 	_client_server_pair.erase(client_fd);
 	_requests.erase(client_fd);
 	_responses.erase(client_fd);

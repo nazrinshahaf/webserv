@@ -39,7 +39,7 @@ Response::Response() : _hasText(false)
 Response::Response(const Request &req, ListeningSocket &server, const int &client_fd, char **envp) : 
 	_req(req), _server(server), _serverConfig(server.get_config()),
 	_client_fd(client_fd), _entireHeader(""), _entireBody(""), _entireText(""),
-	_hasText(true), _error_code(0), _envp(envp) //change later when req.bad_req is int
+	_hasText(true), _error_code(0), _envp(envp), _redirected_path("") //change later when req.bad_req is int
 {
 	_root_path = _serverConfig.find_normal_directive("root").get_value(); //change again
 	if (_req.bad_request())
@@ -49,7 +49,15 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 		build_error_body();
 		build_header();
 		_entireText = _entireHeader + _entireBody;
-		/* Log(DEBUG, std::to_string(_req.done())); */
+		return;
+	}
+
+	if (is_redirect())
+	{
+		_error_code = 301;
+		_redirected_path = _serverConfig.find_location_directive(get_location_path()).get_value("return");
+		build_header();
+		_entireText = _entireHeader + _entireBody;
 		return;
 	}
 
@@ -57,21 +65,15 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 	{
 		string full_path = get_full_path();
 
-		/* Log(WARN, "Auto index = " + std::to_string(is_autoindex())); */
-		// cout << "full_path : " << full_path << endl;
 		if (is_autoindex() && !is_file(full_path))
-		{
 			_entireBody = handle_auto_index(full_path);
-		}
 		else if (is_cgi())
 		{
 			Log(DEBUG, "PROCESS IS CGI");
 			_entireBody = process_cgi(full_path);
 		}
 		else if (!is_redirect())
-		{
 			read_file(full_path);
-		}
 		if (_error_code != 0)
 			build_error_body();
 		build_header();
@@ -80,12 +82,8 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 	}
 	else if (_req.type() == "DELETE")
 	{
-		int	status;
 		string full_path = get_full_path();
 		cout << "full path is: " << full_path << endl;
-		struct stat	path;
-		stat(full_path.c_str(), &path);
-
 		if (!has_allowed_method(_req.type()))
 		{
 			Log(INFO, "Method not allowed");
@@ -93,6 +91,7 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 		}
 		else
 		{
+			int	status;
 			status = remove(full_path.c_str());
 			if (status == 0)
 				Log(INFO, "File has been deleted 💀");
@@ -131,11 +130,13 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 			Log(DEBUG, "IMAGE SAVED");
 			save_image(file_name);
 			_entireBody.clear();
+			_error_code = 302;
 		}
 		if (_error_code != 0)
 			build_error_body();
 		build_header();
 		_entireText = _entireHeader + _entireBody;
+		cout << _entireText << endl;
 	}
 }
 
@@ -181,7 +182,8 @@ string	Response::get_full_path(void)
 				true_root.pop_back();
 			cout << "true_root : " << true_root << endl;
 			cout << "full_path : " << full_path << endl;
-			if (!is_autoindex() && has_allowed_method(_req.path()))
+			/* if (!is_autoindex() && _req.type() != "DELETE") */
+			if (get_location_path() == _req.path() && !is_autoindex())
 			{
 				full_path = get_true_root(location_block_config);
 				if (full_path.back() != '/')
@@ -322,21 +324,23 @@ unsigned long int Response::get_client_max_body_size(void) const
 void	Response::build_header(void)
 {
 	_entireHeader = "HTTP/1.1 ";
-	if (is_redirect()) // todo: dynamically redir
-	{
-		_entireHeader += "301 Moved Permanently\r\nLocation: " + get_redirected_path() + "\r\n\r\n";
-		return;
-	}
-	else if (_error_code)
+	/* if (is_redirect()) // todo: dynamically redir */
+	/* { */
+	/* 	_entireHeader += "301 Moved Permanently\r\nLocation: " + get_redirected_path() + "\r\n\r\n"; */
+	/* 	return; */
+	/* } */
+	if (_error_code)
 	{
 		_entireHeader += std::to_string(_error_code) + " ";
 		switch (_error_code)
 		{
-			default: _entireHeader += "Not OK";
-			case (400): _entireHeader += "Bad Request";
-			case (403): _entireHeader += "Forbidden";
-			case (404): _entireHeader += "Not Found";
-			case (413): _entireHeader += "Content Too Large";
+			default: _entireHeader += "Not OK"; break;
+			case (301): _entireHeader += "Moved Permanently\r\nLocation: " + _redirected_path + "\r\n\r\n"; return;
+			case (302): _entireHeader += "Moved Temporarily\r\nLocation: " + _redirected_path + "\r\n\r\n"; return;
+			case (400): _entireHeader += "Bad Request"; break;
+			case (403): _entireHeader += "Forbidden"; break;
+			case (404): _entireHeader += "Not Found"; break;
+			case (413): _entireHeader += "Content Too Large"; break;
 		}
 	}
 	else
@@ -684,7 +688,18 @@ static string find_filename(string line)
 
 void	Response::save_image(const string file_name)
 {
-	std::ofstream file(file_name);
+	string	path_to_save = get_true_root(_serverConfig.find_location_directive(get_location_path()).get_config());
+	string	path_to_redirect = _req.path();
+
+	if (path_to_save.back() != '/')
+		path_to_save.push_back('/');
+	if (path_to_redirect.back() != '/')
+		path_to_redirect.push_back('/');
+	path_to_save += file_name;
+	path_to_redirect += file_name;
+	_redirected_path = path_to_redirect;
+
+	std::ofstream file(path_to_save);
 	file << _entireBody;
 	file.close();
 }
@@ -894,10 +909,10 @@ std::string	Response::handle_auto_index(string &path)
 	string						url_path = _req.path();
 	std::multimap<int, string>	sorted_mmap;
 
-	/* Log(WARN, "Path in autoindex : " + path); */
+	Log(WARN, "Path in autoindex : " + path);
 	if (url_path.back() != '/')
 		url_path.push_back('/');
-	/* Log(WARN, "Path in autoindex after pop : " + path); */
+	Log(WARN, "Path in autoindex after pop : " + path);
 	directory = opendir(path.c_str());
 	if (directory != NULL)
 	{
