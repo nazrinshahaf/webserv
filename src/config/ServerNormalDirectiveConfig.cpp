@@ -35,7 +35,6 @@ ServerNormalDirectiveConfig::~ServerNormalDirectiveConfig()
 #ifdef PRINT_MSG
 	cout << RED "ServerNormalDirectiveConfig Destructor called" RESET << endl;
 #endif
-	//cout << "address of deleted :" << &*this << endl;
 }
 
 
@@ -51,38 +50,23 @@ ServerNormalDirectiveConfig::get_copy() const
 	return (new ServerNormalDirectiveConfig(*this));
 }
 
-//const pair<string, pair<string, string> >&
 const pair<string, string> &
 ServerNormalDirectiveConfig::get_config(void) const
 {
 	return (_normal_directive_config);
 }
 
-//const string&
-//ServerNormalDirectiveConfig::get_key(void) const
-//{
-//	return (_normal_directive_config.first);
-//}
-
 const string&
 ServerNormalDirectiveConfig::get_value(void) const
 {
-	//return (_normal_directive_config.second.first);
 	return (_normal_directive_config.first);
 }
 
 const string&
 ServerNormalDirectiveConfig::get_value2(void) const
 {
-	//return (_normal_directive_config.second.second);
 	return (_normal_directive_config.second);
 }
-
-//const pair<string, string>&
-//ServerNormalDirectiveConfig::get_value_pair(void) const
-//{
-//	return (_normal_directive_config.second);
-//}
 
 void	ServerNormalDirectiveConfig::set_config(const pair<string, string> &pair_to_insert)
 {

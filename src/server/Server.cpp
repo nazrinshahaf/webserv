@@ -59,15 +59,10 @@ Server::Server(const ServerConfigParser &config, char **envp) : _config(config),
 		for (ServerConfig::cit_t sit = server_block_range.first; sit != server_block_range.second; sit++)
 		{
 			ServerNormalDirectiveConfig nd = dynamic_cast<ServerNormalDirectiveConfig&>(*(sit->second));
-			/* int	fd = std::stoi(nd.get_value()); */
-			/* _server_sockets.push_back(ListeningSocket(AF_INET, SOCK_STREAM, 0, std::stoi(nd.get_value()), INADDR_ANY, 10, server_config)); */
-			/* _server_sockets.insert(std::make_pair(fd, ListeningSocket(AF_INET, SOCK_STREAM, 0, std::stoi(nd.get_value()), INADDR_ANY, 10, server_config))); */
 			add_socket(server_config, nd);
-			// Log(INFO, string("Server open at port ") + nd.get_value(), 0, NULL, NULL, 2, server_config);
 			Log(INFO, string("Server open at port ") + nd.get_value());
 		}
 	}
-	//cout << _config << endl;
 }
 
 Server::~Server()
@@ -124,7 +119,6 @@ int	Server::receiver(const int &client_fd)
 	client_header_request.append(buffer, valread);
 	if (valread == 0)
 		return (-1);
-	// cout << client_header_request.length() << endl;
 	if (_requests.find(client_fd) == _requests.end()) // if this request is new
 	{
 		_requests[client_fd] = Request(client_header_request, client_fd);
@@ -140,10 +134,6 @@ int	Server::receiver(const int &client_fd)
 				_requests[client_fd].add_body(client_header_request);
 	}
 
-	// cout << "done :" << _requests[client_fd].done() << endl;
-	// cout << "header_done :" << _requests[client_fd].header_done() << endl;
-	// cout << "type :" << _requests[client_fd].type() << endl;
-	// cout << "bad_request :" << _requests[client_fd].bad_request() << endl;
 	if ((_requests[client_fd].header_done() && (_requests[client_fd].type() == "GET" || _requests[client_fd].type() == "DELETE")) ||
 		(_requests[client_fd].done() && _requests[client_fd].type() == "POST") ||
 			_requests[client_fd].bad_request())
@@ -250,9 +240,8 @@ void	Server::launch()
 			else //if client socket
 			{
 				// std::map<int,int>::iterator	pair = _client_server_pair.find(curr_poll->fd);
-				server = _server_sockets.find(_client_server_pair.find(curr_poll->fd)->second); //find server that client connected to.
 				// Log(DEBUG, "Poll client socket with fd : " + to_string(curr_poll->fd) + ". Connected to server with fd : " + to_string(pair->second));
-				
+				server = _server_sockets.find(_client_server_pair.find(curr_poll->fd)->second); //find server that client connected to.
 				if (curr_poll->revents & POLLHUP) //if client hungup (refresh) or ^C
 				{
 					Log(INFO, string("Client Hung Up Connection " + string(YELLOW) + "(POLLHUP)" + string(RESET)));
@@ -268,9 +257,7 @@ void	Server::launch()
 						curr_poll->events = POLLOUT;
 					}
 					else if (status == -1)
-					{
 						remove_client(curr_poll->fd, i);
-					}
 					else //if request not done
 					{
 						// Log(DEBUG, "Client not done full request");

@@ -78,7 +78,6 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 			build_error_body();
 		build_header();
 		_entireText = _entireHeader + _entireBody;
-		// cout << _entireHeader << endl;
 	}
 	else if (_req.type() == "DELETE")
 	{
@@ -136,7 +135,6 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 			build_error_body();
 		build_header();
 		_entireText = _entireHeader + _entireBody;
-		cout << _entireText << endl;
 	}
 }
 
@@ -157,14 +155,10 @@ string	Response::get_full_path(void)
 		return (is_url_file);
 	}
 
-	/* Log(DEBUG, "Location path : " + location_path); */
-	/* Log(DEBUG, "url_path : " + _req.path()); */
 	if (_req.path() == "/" || _req.path() == "")
 	{
 		full_path = _serverConfig.find_normal_directive("root").get_value();
 		Log(DEBUG, "true root in / : " + full_path);
-		/* if (is_autoindex()) */
-		/* 	return full_path; */
 		full_path += "/" + _serverConfig.find_normal_directive("index").get_value();
 	}
 	else if (location_path != "")
@@ -176,13 +170,10 @@ string	Response::get_full_path(void)
 
 			full_path = _req.path();
 			string true_root = get_true_root(location_block_config);
-			// cout << "url_path : " << full_path << endl;
-			// cout << "location_path : " << location_path << endl;
 			if (true_root.back() == '/')
 				true_root.pop_back();
 			Log(DEBUG, "true_root : " + true_root);
 			Log(DEBUG, "full_path : " + full_path);
-			/* if (!is_autoindex() && _req.type() != "DELETE") */
 			if ((get_location_path() == _req.path() && !is_autoindex()) || is_cgi())
 			{
 				full_path = get_true_root(location_block_config);
@@ -327,11 +318,6 @@ unsigned long int Response::get_client_max_body_size(void) const
 void	Response::build_header(void)
 {
 	_entireHeader = "HTTP/1.1 ";
-	/* if (is_redirect()) // todo: dynamically redir */
-	/* { */
-	/* 	_entireHeader += "301 Moved Permanently\r\nLocation: " + get_redirected_path() + "\r\n\r\n"; */
-	/* 	return; */
-	/* } */
 	if (_error_code)
 	{
 		_entireHeader += std::to_string(_error_code) + " ";
@@ -392,7 +378,6 @@ void Response::read_file(const string &path) //change name later
 		{
 			Log(ERROR, "File is a directory", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 			_error_code = 403;
-			/* file.open("public/404.html", std::ios::binary); */
 		}
 		else //if not dir
 		{
@@ -526,7 +511,6 @@ bool	Response::check_file_status(const string path) const
 
 string	Response::find_query_string()
 {
-	//TODO: dynamically find cgi path
 	string query;
 
 	if (_req.path().find("?") == string::npos)
@@ -575,13 +559,10 @@ char	**create_new_envp(string query_string, string path_info, char **envp)
 
 string Response::process_cgi(const string cgi_path)
 {
-	// cout << "ENTERED CGI PATH" << endl;
 	string entireText = "";
 	int		fd[2];
 	int		filefd[2];
 	char	execve_buffer[100000];
-	// fcntl(filefd[1], F_SETFL, O_NONBLOCK);
-	// fcntl(filefd[0], F_SETFL, O_NONBLOCK);
 	pipe(fd);
 
 	if (check_file_status(cgi_path) == 1) //if file err
@@ -600,7 +581,6 @@ string Response::process_cgi(const string cgi_path)
 	if (i == 0) //child
 	{
 		std::vector<std::string>  s;
-		/* s.push_back("/opt/homebrew/opt/python@3.9/libexec/bin/python3"); */
 		s.push_back("/usr/bin/python3");
 		s.push_back(cgi_path); //dynamic if file exists 404 if not
 
@@ -629,7 +609,6 @@ string Response::process_cgi(const string cgi_path)
 		close(fd[1]);
 		close(fd[0]);
 		execve("/usr/bin/python3", commands.data(), create_new_envp(query_string, path_info, _envp));
-		/* execve("/opt/homebrew/opt/python@3.9/libexec/bin/python3", commands.data(), create_new_envp(query_string, path_info, _envp)); */
 		exit(1);
 	}
 	else if (i > 0) //parent
@@ -768,43 +747,29 @@ string	Response::process_image(string *file_name)
             {
 				cout << "doing something" << endl;
 				cout << "writing length : " << temp_dict["body"].length() << endl;
-				/* cout << "SENT :" << temp_dict["body"] << endl; */
-                /* string filename = find_filename(temp_dict["Content-Disposition"]); */
 				*file_name = find_filename(temp_dict["Content-Disposition"]);
-                /* std::ofstream out(filename); */
-                /* out << temp_dict["body"]; */
-                /* out.close(); */
 				res.append(temp_dict["body"]);
             }
         }
     }
 	return (res);
 }
+
 void Response::respond(void)
 {
     if (_req.done() || _req.bad_request())
     {
-        /* ssize_t total_to_send = _entireText.length(); */
-		//check if path is ridrection dynamically
-        // ssize_t total_to_send = _entireText.length();
-		// cout << "total to send :" << total_to_send << endl;
-
 		ssize_t sent = send(_client_fd, _entireText.c_str(), _entireText.length(), 0);
-		// cout << "sent : " << sent << endl;
 		if (sent == 0)
 			cout << "SENT IS 0" << endl;
 		if (sent == -1)
 		{
-			/* Log(ERROR, "Send error : " + std::to_string(errno), __LINE__, __PRETTY_FUNCTION__, __FILE__); */
 			cout << "lmao test" << endl;
 			std::cerr << "send err : " << errno << endl;
 			return ;
 		}
 		if (sent != (ssize_t)_entireText.length())
-		{
-			// cout << "amount sent:" << sent << endl;
 			_entireText = _entireText.substr(sent);
-		}
 		else
 			_hasText = false;
     }
@@ -813,11 +778,6 @@ void Response::respond(void)
 bool Response::hasText(void) { return (_hasText); }
 
 const string & Response::get_header(void) const { return (_entireHeader) ;}
-
-/*
- * change this later pls..
- * @note : DONT LOOK AT THIS PLS
- * */
 
 static string	auto_index_apply_syle(void)
 {
@@ -931,10 +891,8 @@ std::string	Response::handle_auto_index(string &path)
 	string						url_path = _req.path();
 	std::multimap<int, string>	sorted_mmap;
 
-	//Log(DEBUG, "Path in autoindex : " + path);
 	if (url_path.back() != '/')
 		url_path.push_back('/');
-	//Log(DEBUG, "Path in autoindex after pop : " + path);
 	directory = opendir(path.c_str());
 	if (directory != NULL)
 	{
