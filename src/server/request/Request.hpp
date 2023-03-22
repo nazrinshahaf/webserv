@@ -25,6 +25,8 @@ namespace webserv
 			bool						_header_done;
 			bool						_bad_request; //change to int
 			bool						_chunked;
+			double			_chunk_length;
+
 
 			int							find_request_type();
 			void						find_request_path();

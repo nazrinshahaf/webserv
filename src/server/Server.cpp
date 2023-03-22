@@ -169,7 +169,7 @@ int		Server::responder(ListeningSocket &server, int &client_fd, char **envp)
 	_responses[client_fd].respond();
 	if (_responses[client_fd].hasText() == false)
 	{
-		Log(DEBUG, "------ Message Sent to Client ------ ");
+		Log(WARN, _responses[client_fd].get_header());
 		return (1); //sent full proper resonpose
 	}
 	return (0); //partion request
@@ -210,7 +210,6 @@ void	Server::launch()
 			struct pollfd			*curr_poll = &_poll_fds[i];
 			sockets_type::iterator	server = _server_sockets.find(curr_poll->fd); //finds server
 
-			
 			if (server == _server_sockets.end() && ++_timeout[curr_poll->fd] > 1000)
 			{
 				// Log(DEBUG, string("Client: " + to_string(curr_poll->fd) + " timeout: " + to_string(_timeout[curr_poll->fd]) + "s"));

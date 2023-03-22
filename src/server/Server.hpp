@@ -92,7 +92,7 @@ namespace webserv
 			vector<struct pollfd>	_poll_fds;
 			char					**_envp;
 
-			static const int		_recv_buffer_size = 65535; //min read bytes
+			static const int		_recv_buffer_size = 655350; //min read bytes
 
 			void	acceptor(ListeningSocket &server);
 			int		receiver(const int &const_fd);

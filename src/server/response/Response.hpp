@@ -69,6 +69,7 @@ namespace webserv
 
         void respond(void);
         bool hasText(void);
+		const string &get_header(void) const;
 
 		class   ResponseException : public std::exception
 		{
