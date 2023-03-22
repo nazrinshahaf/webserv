@@ -180,8 +180,8 @@ string	Response::get_full_path(void)
 			// cout << "location_path : " << location_path << endl;
 			if (true_root.back() == '/')
 				true_root.pop_back();
-			cout << "true_root : " << true_root << endl;
-			cout << "full_path : " << full_path << endl;
+			Log(DEBUG, "true_root : " + true_root);
+			Log(DEBUG, "full_path : " + full_path);
 			/* if (!is_autoindex() && _req.type() != "DELETE") */
 			if (get_location_path() == _req.path() && !is_autoindex())
 			{
@@ -192,10 +192,10 @@ string	Response::get_full_path(void)
 				utils::replaceAll(full_path, "%20", " ");
 				return (full_path);
 			}
-			cout << "full_path with index : " << full_path << endl;
+			Log(DEBUG, "full_path with index : " + full_path);
 			utils::replaceAll(full_path, location_path, true_root);
 			utils::replaceAll(full_path, "%20", " ");
-			cout << "full_path with index after repl: " << full_path << endl;
+			Log(DEBUG, "full_path with index after replace : " + full_path);
 		} catch (BaseConfig::ConfigException &e) { //no location just search root directory
 			Log(ERROR, "URL path is not location (i dont think the error should show up here)", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 		}

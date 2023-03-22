@@ -99,6 +99,7 @@ void	Server::acceptor(ListeningSocket &server)
 	new_socket_fd = server.accept_connections();
 	if (new_socket_fd >= 0)
 	{
+		Log(INFO, "========================================================");
 		Log(INFO, string("Client open with fd : ") + to_string(new_socket_fd),
 				0, NULL, NULL, 2, server.get_config());
 		Log(INFO, "Client connected with ip : " + server.get_client_ip(),
@@ -313,6 +314,7 @@ void	Server::add_servers_to_poll(void)
 void	Server::remove_client(const int &client_fd, const int &poll_index)
 {
 	Log(INFO, (string("Client socket closed with fd ") + to_string(client_fd)));
+	Log(INFO, "========================================================");
 	_client_server_pair.erase(client_fd);
 	_requests.erase(client_fd);
 	_responses.erase(client_fd);
