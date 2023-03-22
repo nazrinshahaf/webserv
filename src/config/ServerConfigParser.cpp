@@ -670,7 +670,7 @@ void		ServerConfigParser::validate_allowed_methods(const std::vector<string> &al
 
 	for (std::vector<string>::iterator method = copy.begin(); method != copy.end(); method++)
 	{
-		if (std::count(copy.begin(), copy.end(), *method) > 0)
+		if (std::count(copy.begin(), copy.end(), *method) != 1)
 			throw ServerParserException("Found duplicate methods in allowed_methods");
 	}
 }
