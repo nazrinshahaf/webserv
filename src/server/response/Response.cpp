@@ -541,11 +541,11 @@ string	Response::find_path_info()
 	int end;
 
 	if (_req.path().find("?") != string::npos)
-		end = _req.path().find("?") - string("/cgi").length(); //TODO: dynamic
+		end = _req.path().find("?") - get_location_path().length(); //TODO: dynamic
 	else
 		end = _req.path().length();
 
-	path = _req.path().substr(string("/cgi").length(), end); //TODO: dynamic
+	path = _req.path().substr(get_location_path().length(), end); //TODO: dynamic
 
 	if (path.length() == 0)
 		path = "/";

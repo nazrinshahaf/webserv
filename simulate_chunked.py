@@ -18,7 +18,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.send(header.encode())
     time.sleep(0.5)
     total_sent = 0
-    length_to_send = 6900
+    length_to_send = 69000
     for x in range((100)):
         chunks = f"{str(length_to_send)}\r\n{''.join(random.sample(kbtext,len(kbtext)))[:length_to_send]}\r\n"
         s.send(chunks.encode())
