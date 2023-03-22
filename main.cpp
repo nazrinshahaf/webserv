@@ -38,33 +38,12 @@ void start_server(char **envp)
 
 	Server				server(config_parser, envp);
 	server.launch();
-	
-	/* ServerNormalDirectiveConfig	nd; */
-	/*  */
-	/* nd.set_config(std::make_pair("80", string())); */
-	/*  */
-	/* ServerConfig	sc; */
-	/* sc.insert_config(std::make_pair("listen", &nd)); */
-	/*  */
-	/* ServerConfig sc_copy(sc); */
 }
 
 int main(int argc, char **argv, char **envp)
 {
 	(void) argc;
 	(void) argv;
-
-    // string d_conf_file;
-
-    // if (argc < 2)
-    //     d_conf_file = "./webserv.conf";
-    // else
-    //     d_conf_file = argv[1];
-
-    // if (access(d_conf_file.c_str(), F_OK) != 0) {
-    //     perror("Could not find webserv.conf in current directory");
-    //     return -1;
-    // }
 	
 	try
 	{

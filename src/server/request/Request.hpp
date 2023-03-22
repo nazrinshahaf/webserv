@@ -59,7 +59,6 @@ namespace webserv
 			bool							done();
 			bool							header_done();
 			void							add_body(string buffer);
-			/* void							process_image(); */
 			void							read_header(string request_string);
 			struct RequiredHeaderParamNotGivenException : public std::exception {
 				const char * what () const throw () {

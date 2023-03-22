@@ -4,6 +4,7 @@
 #include "ServerLocationDirectiveConfig.hpp"
 #include "ServerNormalDirectiveConfig.hpp"
 #include "../colours.h"
+#include "../utils/Utils.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -146,11 +147,6 @@ void ServerConfigParser::parse_config(void)
 		if (line_length == config.npos)
 			break;
 
-		/* cout << "Config" << endl; */
-		/* cout << "===============" << endl; */
-		/* cout << config; */
-		/* cout << "===============" << endl; */
-
 		key = extract_key(config);
 		valid_key = is_valid_base_directive(key);
 		if (valid_key == 1) //if keyword is server
@@ -161,23 +157,13 @@ void ServerConfigParser::parse_config(void)
 				throw ServerParserException("Found non bracket after server keyword");
 
 			config = config.substr(config.find_first_of("{") + 1);
-			//cout << "Config" << endl;
-			//cout << "===============" << endl;
-			//cout << config;
-			//cout << "===============" << endl;
 			string server_block = extract_bracket_content(&config, '{', '}');
 			server_config = parse_server_block(server_block);
 			insert_config(std::make_pair(key, &server_config));
-			//cout << server_config << endl;
 		}
-		//else if (key == "user") //other keyword without block
-		//{
-		//	cout << "other valid keyword" << endl;
-		//}
 		else
 			throw ServerParserException("Invalid key found in config { " + key + "} not a keyword");
 	}
-	//cout << *this << endl;
 }
 
 void	ServerConfigParser::validate_config(void)
@@ -271,28 +257,16 @@ string	ServerConfigParser::extract_bracket_content(std::string *config,
 	string	server_block = *config;
 	size_t	final_pos = 0;
 
-	//cout << "intro" << endl;
-	//cout << "=========" << endl;
-	//cout << server_block << endl;
-	//cout << "=========" << endl;
-
 	while (1)
 	{
 		size_t	open_bracket_pos = server_block.find(open_bracket);
 		size_t	close_bracket_pos = server_block.find(close_bracket);
-		//cout << "........................." << endl;
-		//cout << "open_bracket_pos : " << open_bracket_pos << endl;
-		//cout << "close_bracket_pos : " << close_bracket_pos << endl;
-		//cout << "........................." << endl;
 		if (close_bracket_pos == server_block.npos)
 			throw ServerParserException("No closing bracket found");
 		if (open_bracket_pos < close_bracket_pos)
 		{
 			server_block = server_block.substr(close_bracket_pos + 1);
 			final_pos += close_bracket_pos + 1;
-			//cout << "----------" << endl;
-			//cout << server_block << endl;
-			//cout << "----------" << endl;
 		}
 		else if (open_bracket_pos > close_bracket_pos ||
 				open_bracket_pos == string::npos)
@@ -303,35 +277,20 @@ string	ServerConfigParser::extract_bracket_content(std::string *config,
 			break ;
 		}
 	}
-	//cout << "final_pos : " << final_pos << endl;
 
 	//Final server_block
 	server_block = config->substr(0, final_pos);
 
 	//Move the config to next block (might move somwhere else?)
 	*config = config->substr(final_pos + 1);
-	/* cout << "server_block in" << endl; */
-	/* cout << "--------------" << endl; */
-	/* cout << "[" << server_block << "]"; */
-	/* cout << "--------------" << endl; */
-	//cout << "config in" << endl;
-	//cout << "--------------" << endl;
-	//cout << *config;
-	//cout << "--------------" << endl;
 
 	//Trimming spaces around server_block
-	//cout << server_block[server_block.find_last_not_of("\t\n ")] << endl;
-	//cout << server_block.find_last_not_of("\t\n ") << endl;
-	//cout << server_block.length() << endl;
 	try {
 		server_block = server_block.substr(server_block.find_first_not_of("\t\n "),
 				server_block.find_last_not_of("\t\n ") + 1);
 	} catch (std::out_of_range &e) {
 		throw ServerParserException("Nothing in server block");
 	}
-	//cout << "--------------" << endl;
-	//cout << server_block;
-	//cout << "--------------" << endl;
 	return (server_block);
 }
 
@@ -339,12 +298,6 @@ string	ServerConfigParser::extract_key(const string &line) const
 {
 	string	key;
 	string	skip_spaces;
-
-	//dont think i need this.
-	//if (line.find_first_of(("{")) == line.npos)
-	//	cout << "throw no opening block in key" << endl; //throw some error
-	
-	//key = line.substr(0, line.find_first_of("{\t\n "));
 	
 	try 
 	{
@@ -355,9 +308,6 @@ string	ServerConfigParser::extract_key(const string &line) const
 	{
 		throw ServerParserException("No key to extract");
 	}
-	//cout << "----------------" << endl;
-	//cout << "key = [" << key << "]" << endl;
-	//cout << "----------------" << endl;
 	
 	return (key);
 }
@@ -366,11 +316,6 @@ string	ServerConfigParser::extract_value(const string &line, int look_for_bracke
 {
 	string	value;
 	string	skip_spaces_and_key;
-
-	//Maybe add new line here idk
-	//Used to skip the key and extra space idk how to do it faster.
-	//skip_spaces_and_key = line.substr(line.find_first_of("\t "), 
-	//		line.find_last_not_of("\t\n ") - 1);
 
 	try
 	{
@@ -388,10 +333,6 @@ string	ServerConfigParser::extract_value(const string &line, int look_for_bracke
 		throw ServerParserException("throw some error value not found");
 	}
 
-	//cout << "----------------" << endl;
-	//cout << "skip = [" << skip_spaces_and_key << "]" << endl;
-	//cout << "----------------" << endl;
-
 	//Value has to be on same line as key
 	if (look_for_bracket == 0)
 	{
@@ -406,10 +347,6 @@ string	ServerConfigParser::extract_value(const string &line, int look_for_bracke
 		//Skip spaces after value
 		value = value.substr(0, value.find_last_not_of("\t ") + 1);
 	}
-
-	/* cout << "----------------" << endl; */
-	/* cout << "value = [" << value << "]" << endl; */
-	/* cout << "----------------" << endl; */
 
 	return (value);
 }
@@ -594,21 +531,6 @@ void		ServerConfigParser::initialize_valid_directives(const char **directives, s
 
 // =========================== validation ==================================
 
-bool is_string_num(const string &str)
-{
-	return (str.find_first_not_of("0123456789") == str.npos);
-}
-
-bool is_string_path(const string &str)
-{
-	for (string::const_iterator c = str.begin(); c != str.end(); c++)
-	{
-		if (!std::isdigit(*c) && *c != '/' && *c != '.' && !std::isalpha(*c))
-			return (0);
-	}
-	return (1);
-}
-
 void		ServerConfigParser::validate_server_map_directive_count(const ServerConfig::map_type &server_map) const
 {
 	if (server_map.count("listen") != 1)
@@ -629,7 +551,7 @@ void		ServerConfigParser::validate_location_map_directive_count(const ServerLoca
 
 void		ServerConfigParser::validate_listen(const string &value) const
 {
-	if (!is_string_num(value))
+	if (!utils::isNumber(value))
 		throw ServerParserException("Invalid character found in listen directive");
 }
 
@@ -643,7 +565,7 @@ void		ServerConfigParser::validate_error_log(const string &value) const
 
 void		ServerConfigParser::validate_error_page(const string &value) const
 {
-	if (!is_string_num(value))
+	if (!utils::isNumber(value))
 		throw ServerParserException("Invalid character found in error_page number directive");
 }
 
