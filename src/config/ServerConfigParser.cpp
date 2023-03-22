@@ -527,19 +527,26 @@ ServerLocationDirectiveConfig	ServerConfigParser::parse_server_location_block(co
 		string	line;
 		string	key;
 		int		is_valid;
+		int		value_count;
 
 		if (line_length == location_block_copy.npos)
 			break ;
 		line = location_block_copy.substr(0, line_length);
+		value_count = count_values_in_line(line);
 		key = extract_key(line);
 		is_valid = is_valid_location_directive(key);
 		if (is_valid == 1)
 		{
+			if (value_count != 1)
+				throw ServerParserException("Wrong value count for key {" + key + "}");
 			location_directive.insert_config(std::make_pair(extract_key(line), extract_value(line)));
 			location_block_copy = location_block_copy.substr(location_block_copy.find_first_of(";") + 1);
 		}
 		else if (is_valid == 3)
 		{
+			if (value_count > 3)
+				throw ServerParserException("Wrong value count for key {" + key + "}");
+
 			string value = extract_value(line);
 
 			std::transform(value.begin(), value.end(), value.begin(), ::toupper);
@@ -660,6 +667,12 @@ void		ServerConfigParser::validate_allowed_methods(const std::vector<string> &al
 		if (*method != "GET" && *method != "POST" && *method != "DELETE")
 			throw ServerParserException("Invalid value for allowed_methods");
 	}
+
+	for (std::vector<string>::iterator method = copy.begin(); method != copy.end(); method++)
+	{
+		if (std::count(copy.begin(), copy.end(), *method) > 0)
+			throw ServerParserException("Found duplicate methods in allowed_methods");
+	}
 }
 
 // =========================== ostream overload ==================================
@@ -689,7 +702,7 @@ std::ostream&	operator<<(std::ostream& os, const ServerConfigParser &config)
 					ServerLocationDirectiveConfig	ld = dynamic_cast<ServerLocationDirectiveConfig&>(*(*mit).second);
 					ServerLocationDirectiveConfig::map_type	location_map = ld.get_config();
 
-					os << "\t\t[LocationDirectiveConfig] : " << endl;
+					os << "\t\t[LocationDirectiveConfig] : " BLUE << ld.get_path() << RESET << endl;
 					for (ServerLocationDirectiveConfig::map_type::iterator lit = location_map.begin(); lit != location_map.end(); lit++)
 						os << "\t\t\t<key : " MAGENTA << (*lit).first << RESET ", value : " CYAN << (*lit).second << RESET ">" << endl;
 					os << endl;
