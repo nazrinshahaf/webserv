@@ -183,7 +183,7 @@ string	Response::get_full_path(void)
 			Log(DEBUG, "true_root : " + true_root);
 			Log(DEBUG, "full_path : " + full_path);
 			/* if (!is_autoindex() && _req.type() != "DELETE") */
-			if (get_location_path() == _req.path() && !is_autoindex())
+			if ((get_location_path() == _req.path() && !is_autoindex()) || is_cgi())
 			{
 				full_path = get_true_root(location_block_config);
 				if (full_path.back() != '/')
@@ -590,6 +590,8 @@ string Response::process_cgi(const string cgi_path)
 		return (string());
 	}
 
+	string test_path = get_location_path();
+
 	if (_req.type() == "POST") //read the request body if its post
 		pipe(filefd);
 
@@ -641,9 +643,9 @@ string Response::process_cgi(const string cgi_path)
 				if (w > 0)
 					to_write.erase(0, w);
 			}
+			close(filefd[1]);
+			close(filefd[0]);
 		}
-		close(filefd[1]);
-		close(filefd[0]);
 		close(fd[1]);
 		int test = -1;
 		while (test != 0)
