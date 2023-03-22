@@ -283,7 +283,7 @@ void	Request::read_header(string request_string)
 
 Request::Request(string request_string, int socket) :
 	_body(""), _socket(socket),
-	_is_done(false), _header_done(false), _bad_request(false), _chunked(false)
+	_is_done(false), _header_done(false), _bad_request(false), _chunked(false), _chunk_length(0)
 {
 #ifdef PRINT_MSG
 	cout << "Request Assignment Constructor called" << endl;
@@ -335,15 +335,32 @@ const string    Request::to_str() const
 
 string  Request::process_chunk(string buffer)
 {
-	int chars_to_read;
-	cout << "CHUNK IS:" << buffer << endl;
-	cout << "READING FROM CHUNK " << buffer.substr(0, buffer.find("\r\n")) << endl;
+    double  chars_to_read;
 
-	chars_to_read = std::stoi(buffer.substr(0, buffer.find("\r\n")).c_str());
+	if (_chunk_length == 0)
+    {
+        try
+        {
+	     _chunk_length = std::stod(buffer.substr(0, buffer.find("\r\n")).c_str());
+        }
+        catch(const std::exception& e)
+        {
+            // std::cerr << buffer << endl;
+            // std::cerr << e.what() << '\n';
+            Log(ERROR, "Chunk request received in improper format", __LINE__, __PRETTY_FUNCTION__, __FILE__);
+            _bad_request = true;
+        }
+        
+    }
+    chars_to_read = _chunk_length;
+	// cout << "CHUNK IS:" << buffer << endl;
+	// cout << "READING FROM CHUNK " << buffer.substr(0, buffer.find("\r\n")) << endl;
 	buffer = buffer.substr(buffer.find("\r\n") + 2, chars_to_read);
+
 	if (chars_to_read == 0 && buffer.length() == 0)
 		_is_done = true;
-	cout << "UNCHUNKED MESSAGE:" << buffer <<endl;
+    _chunk_length -= buffer.length();
+	// cout << "UNCHUNKED MESSAGE:" << buffer <<endl;
 	return (buffer);
 }
 
@@ -359,11 +376,10 @@ void  Request::add_body(string buffer)
 
     // for (string::iterator it = buffer.begin(); it != buffer.end(); it++)
     //     _body.push_back(*it);
-    _body.append(buffer, buffer.length());
+    _body.append(buffer, 0, buffer.length());
 	
     if (!is_chunked() && std::stoul(_headers["Content-Length"]) == _body.size())
         _is_done = true;
-	cout << _body.length() << endl;
 }
 
 

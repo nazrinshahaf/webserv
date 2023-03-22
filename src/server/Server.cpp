@@ -147,7 +147,7 @@ int	Server::receiver(const int &client_fd)
 		(_requests[client_fd].done() && _requests[client_fd].type() == "POST") ||
 			_requests[client_fd].bad_request())
 	{
-		// Log(DEBUG, _requests[client_fd].to_str());
+		Log(DEBUG, _requests[client_fd].to_str());
 		return (1); //sent full request
 	}
 	return (0); //sent partial request
@@ -169,7 +169,7 @@ int		Server::responder(ListeningSocket &server, int &client_fd, char **envp)
 	_responses[client_fd].respond();
 	if (_responses[client_fd].hasText() == false)
 	{
-		Log(DEBUG, "------ Message Sent to Client ------ ");
+		Log(WARN, _responses[client_fd].get_header());
 		return (1); //sent full proper resonpose
 	}
 	return (0); //partion request
@@ -211,12 +211,12 @@ void	Server::launch()
 			sockets_type::iterator	server = _server_sockets.find(curr_poll->fd); //finds server
 
 			
-			if (server == _server_sockets.end() && ++_timeout[curr_poll->fd] > 1000)
-			{
-				// Log(WARN, string("Client: " + to_string(curr_poll->fd) + " timeout: " + to_string(_timeout[curr_poll->fd]) + "s"));
-				remove_client(curr_poll->fd, i);
-				continue;
-			}
+			// if (server == _server_sockets.end() && ++_timeout[curr_poll->fd] > 1000)
+			// {
+			// 	Log(WARN, string("TIMED OUT CLIENT: " + to_string(curr_poll->fd) + " timeout: " + to_string(_timeout[curr_poll->fd]) + "s"));
+			// 	remove_client(curr_poll->fd, i);
+			// 	continue;
+			// }
 			if (curr_poll->revents == 0) //if no events are detected on server
 			{
 				/* Log(DEBUG, "No revents for " + to_string(curr_poll->fd)); */

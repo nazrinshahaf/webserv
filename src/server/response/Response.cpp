@@ -156,13 +156,13 @@ string	Response::get_full_path(void)
 
 			full_path = _req.path();
 			string true_root = get_true_root(location_block_config);
-			cout << "url_path : " << full_path << endl;
-			cout << "location_path : " << location_path << endl;
+			// cout << "url_path : " << full_path << endl;
+			// cout << "location_path : " << location_path << endl;
 			if (true_root.back() == '/')
 				true_root.pop_back();
-			cout << "true_root : " << true_root << endl;
-			cout << "full_path : " << full_path << endl;
-			if (!is_autoindex() && has_allowed_method(_req.path()))
+			// cout << "true_root : " << true_root << endl;
+			// cout << "full_path : " << full_path << endl;
+			if (!is_autoindex()) //check if delete Fix ltr
 			{
 				full_path = get_true_root(location_block_config);
 				if (full_path.back() != '/')
@@ -172,6 +172,7 @@ string	Response::get_full_path(void)
 			}
 			cout << "full_path with index : " << full_path << endl;
 			utils::replaceAll(full_path, location_path, true_root);
+			cout << "full_path with index after repl: " << full_path << endl;
 		} catch (BaseConfig::ConfigException &e) { //no location just search root directory
 			Log(ERROR, "URL path is not location (i dont think the error should show up here)", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 		}
@@ -328,7 +329,7 @@ void Response::read_file(const string &path) //change name later
 		_error_code = 404;
 	}
 
-    char read_buffer[65535]; // create a read_buffer
+    char read_buffer[655350]; // create a read_buffer
     while (file.read(read_buffer, sizeof(read_buffer)))
         _entireBody.append(read_buffer, file.gcount());
     _entireBody.append(read_buffer, file.gcount());
@@ -497,10 +498,13 @@ char	**create_new_envp(string query_string, string path_info, char **envp)
 
 string Response::process_cgi(const string cgi_path)
 {
-	cout << "ENTERED CGI PATH" << endl;
+	// cout << "ENTERED CGI PATH" << endl;
 	string entireText = "";
 	int		fd[2];
+	int		filefd[2];
 	char	execve_buffer[100000];
+	// fcntl(filefd[1], F_SETFL, O_NONBLOCK);
+	// fcntl(filefd[0], F_SETFL, O_NONBLOCK);
 	pipe(fd);
 
 	if (check_file_status(cgi_path) == 1) //if file err
@@ -508,19 +512,24 @@ string Response::process_cgi(const string cgi_path)
 		Log(ERROR, "CGI path " + cgi_path + " cant be opened", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 		return (string());
 	}
+
+	if (_req.type() == "POST") //read the request body if its post
+		pipe(filefd);
+
 	pid_t i = fork();
+	
 	if (i == 0) //child
 	{
 		std::vector<std::string>  s;
 		s.push_back("/opt/homebrew/opt/python@3.9/libexec/bin/python3");
 		s.push_back(cgi_path); //dynamic if file exists 404 if not
 
+
 		std::vector<char*> commands;
 		for (size_t i = 0; i < s.size(); i++)
 			commands.push_back(const_cast<char*>(s[i].c_str()));
 		commands.push_back(nullptr);
 
-		/* dprintf(2, "in child\n"); */
 
 		string query_string, path_info;
 
@@ -530,17 +539,13 @@ string Response::process_cgi(const string cgi_path)
 		// int file;
 		if (_req.type() == "POST") //read the request body if its post
 		{
-			int tempfd[2];
-
-			pipe(tempfd);
 			// file = open((string("body") + std::to_string(_req.socket())).c_str(), O_RDWR);
-			write(tempfd[1], _req.body().c_str(), _req.body().length());
-			dup2(tempfd[0], STDIN_FILENO);
-			close(tempfd[1]);
-			close(tempfd[0]);
+			dup2(filefd[0], STDIN_FILENO);
+			close(filefd[0]);
+			close(filefd[1]);
 		}
 		
-		dup2(fd[1], STDOUT_FILENO);
+		dup2(fd[1], STDOUT_FILENO);//NOTE: try comment this and it works
 		close(fd[1]);
 		close(fd[0]);
 		execve("/opt/homebrew/opt/python@3.9/libexec/bin/python3", commands.data(), create_new_envp(query_string, path_info, _envp));
@@ -548,24 +553,32 @@ string Response::process_cgi(const string cgi_path)
 	}
 	else if (i > 0) //parent
 	{
-		/* dprintf(2, "parent waiting\n"); */
-		if (_req.type() == "POST")
-			std::remove((string("body") + std::to_string(_req.socket())).c_str());
+		string to_write = _req.body();
+		if (_req.type() == "POST") //read the request body if its post
+		{
+			while (to_write.length() > 0)
+			{
+				int w = write(filefd[1], to_write.c_str(), to_write.length() > 60000 ? 60000 : to_write.length());
+				if (w > 0)
+					to_write.erase(0, w);
+
+			}
+		}
+		close(filefd[1]);
+		close(filefd[0]);
 		close(fd[1]);
+		int test = -1;
+		while (test != 0)
+		{
+			test = read(fd[0], execve_buffer, 60000);
+			if (test > 0)
+			{
+				execve_buffer[test] = '\0';
+				entireText = entireText + string(execve_buffer);
+			}
+		}
 		waitpid(i, NULL, 0);
-		/* dprintf(2, "parent done waiting\n"); */
-		int test = read(fd[0], execve_buffer, 99999);
 		close(fd[0]);
-		/* dprintf(2, "\t\t--BEFORE---\n"); */
-		/* dprintf(2, "%s", entireText.c_str()); */
-		/* dprintf(2, "\t\t-----\n"); */
-		/* dprintf(2, "read count = [%d]\n", test); */
-		/* // dprintf(2, "execve buffer = [%s]\n", execve_buffer); */
-		execve_buffer[test] = '\0';
-		entireText = string(execve_buffer);
-		/* dprintf(2, "\t\t-----\n"); */
-		/* dprintf(2, "%s", entireText.c_str()); */
-		/* dprintf(2, "\t\t-----\n"); */
 	}
 	else
 	{
@@ -610,6 +623,8 @@ void Response::respond(void)
 }
 
 bool Response::hasText(void) { return (_hasText); }
+
+const string & Response::get_header(void) const { return (_entireHeader) ;}
 
 /*
  * change this later pls..

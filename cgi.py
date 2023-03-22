@@ -6,7 +6,7 @@ import os
 import sys
 
 import select
-
+import time
 print('<!DOCTYPE html>')
 print(f'<h1>DIS THE CGI PAGE BOI</h1>')
 print(f"<p>____STDIN____</p>")
