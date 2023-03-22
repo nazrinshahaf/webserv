@@ -189,10 +189,12 @@ string	Response::get_full_path(void)
 				if (full_path.back() != '/')
 					full_path += "/";
 				full_path += get_true_index(location_block_config);
+				utils::replaceAll(full_path, "%20", " ");
 				return (full_path);
 			}
 			cout << "full_path with index : " << full_path << endl;
 			utils::replaceAll(full_path, location_path, true_root);
+			utils::replaceAll(full_path, "%20", " ");
 			cout << "full_path with index after repl: " << full_path << endl;
 		} catch (BaseConfig::ConfigException &e) { //no location just search root directory
 			Log(ERROR, "URL path is not location (i dont think the error should show up here)", __LINE__, __PRETTY_FUNCTION__, __FILE__);
@@ -638,7 +640,6 @@ string Response::process_cgi(const string cgi_path)
 				int w = write(filefd[1], to_write.c_str(), to_write.length() > 60000 ? 60000 : to_write.length());
 				if (w > 0)
 					to_write.erase(0, w);
-
 			}
 		}
 		close(filefd[1]);
@@ -792,6 +793,8 @@ void Response::respond(void)
 			cout << "SENT IS 0" << endl;
 		if (sent == -1)
 		{
+			/* Log(ERROR, "Send error : " + std::to_string(errno), __LINE__, __PRETTY_FUNCTION__, __FILE__); */
+			cout << "lmao test" << endl;
 			std::cerr << "send err : " << errno << endl;
 			return ;
 		}
@@ -886,8 +889,10 @@ static string			auto_index_print_file_size(const string &path, const string &fil
 	string		full_path = path + "/" + file_name;
 
 	stat(full_path.c_str(), &attr);
-	if (attr.st_size > 1000)
-		return (std::to_string(attr.st_size/1000) + "MB");
+	if (attr.st_size > 1000000)
+		return (std::to_string(attr.st_size/1000000) + "MB");
+	else if (attr.st_size > 1000)
+		return (std::to_string(attr.st_size/1000) + "KB");
 	return (std::to_string(attr.st_size) + "B");
 }
 
@@ -924,10 +929,10 @@ std::string	Response::handle_auto_index(string &path)
 	string						url_path = _req.path();
 	std::multimap<int, string>	sorted_mmap;
 
-	Log(WARN, "Path in autoindex : " + path);
+	//Log(DEBUG, "Path in autoindex : " + path);
 	if (url_path.back() != '/')
 		url_path.push_back('/');
-	Log(WARN, "Path in autoindex after pop : " + path);
+	//Log(DEBUG, "Path in autoindex after pop : " + path);
 	directory = opendir(path.c_str());
 	if (directory != NULL)
 	{

@@ -1,4 +1,5 @@
 #include "Log.hpp"
+#include "../utils/Utils.hpp"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -122,7 +123,10 @@ void	Log::print_debug_msg(const log_level &level, const int &log_to_file, std::f
 		if (log_msg_copy.find_first_of("\n") == log_msg_copy.npos)
 			log_line = log_msg_copy;
 		else
+		{
 			log_line = log_msg_copy.substr(0, log_msg_copy.find_first_of("\n"));
+			utils::replaceAll(log_line, "\r", string(CYAN) + "\\r\\n" + string(RESET));
+		}
 		print_debug_level(level, log_to_file, log_file, file_log_level);
 		switch (log_to_file)
 		{

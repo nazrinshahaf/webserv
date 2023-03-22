@@ -169,7 +169,7 @@ int		Server::responder(ListeningSocket &server, int &client_fd, char **envp)
 	_responses[client_fd].respond();
 	if (_responses[client_fd].hasText() == false)
 	{
-		Log(WARN, _responses[client_fd].get_header());
+		Log(INFO, _responses[client_fd].get_header());
 		return (1); //sent full proper resonpose
 	}
 	return (0); //partion request
