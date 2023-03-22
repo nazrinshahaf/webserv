@@ -110,13 +110,32 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 	else if (_req.type() == "POST")
 	{
 		string	full_path = get_full_path();
+		string	file_name;
 
 		Log(DEBUG, "POST IS CGI");
 		if (is_cgi())
-			_entireText = process_cgi(full_path);
+			_entireBody = process_cgi(full_path);
+		else
+			_entireBody = process_image(&file_name);
+		if (has_client_max_body_size())
+		{
+			Log(DEBUG, "Client has max body size of :" + std::to_string(get_client_max_body_size()));
+			if (_entireBody.length() > get_client_max_body_size())
+			{
+				_error_code = 413;
+				_entireBody.clear();
+			}
+		}
+		if (_error_code == 0 && !is_cgi()) //if image post and length not mismatch
+		{
+			Log(DEBUG, "IMAGE SAVED");
+			save_image(file_name);
+			_entireBody.clear();
+		}
 		if (_error_code != 0)
 			build_error_body();
 		build_header();
+		_entireText = _entireHeader + _entireBody;
 	}
 }
 
@@ -250,6 +269,57 @@ bool	Response::is_autoindex(void) const
 	}
 }
 
+bool	Response::has_client_max_body_size(void) const
+{
+	string location_path = get_location_path();
+
+	if (location_path == "")
+	{
+		try {
+			_serverConfig.find_normal_directive("client_max_body_size");
+			return (true);
+		} catch (BaseConfig::ConfigException &e) {
+			return (false);
+		}
+	}
+	try {
+		ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
+
+		if (location_block.get_config().find("client_max_body_size") == location_block.get_config().end())
+			return (false);
+		return (true);
+	} catch (BaseConfig::ConfigException &e) {
+		return (false);
+	}
+}
+
+unsigned long int Response::get_client_max_body_size(void) const
+{
+	string location_path = get_location_path();
+
+	if (location_path == "")
+	{
+		try {
+			_serverConfig.find_normal_directive("client_max_body_size");
+			return (std::stoul(_serverConfig.find_normal_directive("client_max_body_size").get_value()));
+		} catch (BaseConfig::ConfigException &e) {
+			return (0);
+		}
+	}
+	else
+	{
+		try {
+			ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
+
+			if (location_block.get_config().find("client_max_body_size") == location_block.get_config().end())
+				return (0);
+			return (std::stoul(location_block.get_config().find("client_max_body_size")->second));
+		} catch (BaseConfig::ConfigException &e) {
+			return (0);
+		}
+	}
+}
+
 void	Response::build_header(void)
 {
 	_entireHeader = "HTTP/1.1 ";
@@ -263,10 +333,11 @@ void	Response::build_header(void)
 		_entireHeader += std::to_string(_error_code) + " ";
 		switch (_error_code)
 		{
-			case (400): _entireHeader += "Bad Request"; break;
-			case (403): _entireHeader += "Forbidden"; break;
-			case (404): _entireHeader += "Not Found"; break;
-			default: _entireHeader += "Not OK"; break;
+			default: _entireHeader += "Not OK";
+			case (400): _entireHeader += "Bad Request";
+			case (403): _entireHeader += "Forbidden";
+			case (404): _entireHeader += "Not Found";
+			case (413): _entireHeader += "Content Too Large";
 		}
 	}
 	else
@@ -521,7 +592,8 @@ string Response::process_cgi(const string cgi_path)
 	if (i == 0) //child
 	{
 		std::vector<std::string>  s;
-		s.push_back("/opt/homebrew/opt/python@3.9/libexec/bin/python3");
+		/* s.push_back("/opt/homebrew/opt/python@3.9/libexec/bin/python3"); */
+		s.push_back("/usr/bin/python3");
 		s.push_back(cgi_path); //dynamic if file exists 404 if not
 
 
@@ -548,7 +620,8 @@ string Response::process_cgi(const string cgi_path)
 		dup2(fd[1], STDOUT_FILENO);//NOTE: try comment this and it works
 		close(fd[1]);
 		close(fd[0]);
-		execve("/opt/homebrew/opt/python@3.9/libexec/bin/python3", commands.data(), create_new_envp(query_string, path_info, _envp));
+		execve("/usr/bin/python3", commands.data(), create_new_envp(query_string, path_info, _envp));
+		/* execve("/opt/homebrew/opt/python@3.9/libexec/bin/python3", commands.data(), create_new_envp(query_string, path_info, _envp)); */
 		exit(1);
 	}
 	else if (i > 0) //parent
@@ -590,16 +663,111 @@ string Response::process_cgi(const string cgi_path)
 	return (entireText);
 }
 
+static string find_filename(string line)
+{
+    string temp = line;
+    string data = "";
+    std::map<string, string> temp_dict;
+
+    while (temp.size() > 0)
+    {
+        if (temp.find("; ") == string::npos){
+            data = temp;
+            temp = temp.erase(0, data.length());
+        }
+        else{
+            data = temp.substr(0, temp.find("; ") + 1);
+            temp = temp.erase(0, data.length() + 1);
+        }
+        if (temp.size() >= 2 && temp[0] == '\r' && temp[1] == '\n')
+            break;
+        if (data.find("=") != string::npos)
+        {
+            string key = data.substr(0, data.find("="));
+            string value = data.substr(data.find("=") + 1, (data.length() - data.find("=")));
+            value.erase(std::remove(value.begin(), value.end(), '"'), value.end());
+            value.erase(std::remove(value.begin(), value.end(), ';'), value.end());
+            temp_dict[key] = value;
+        }
+    }
+    if (temp_dict.find("filename") != temp_dict.end())
+        return (temp_dict.find("filename")->second);
+    return ("nofilename");
+}
+
+void	Response::save_image(const string file_name)
+{
+	std::ofstream file(file_name);
+	file << _entireBody;
+	file.close();
+}
+
+string	Response::process_image(string *file_name)
+{
+	string	res;
+
+    if (_req.headers().find("Content-Type") == _req.headers().end())
+        return (res);
+
+    if (_req.headers().find("Content-Type")->second.find("multipart/form-data;") == 0)
+    {
+        string boundary;
+        string body = _req.body();
+        std::vector<string> datas;
+
+        boundary = "--" + _req.headers().find("Content-Type")->second.substr(_req.headers().find("Content-Type")->second.find("=") + 1, 38);
+        while (body.find(boundary) != string::npos)
+        {
+            string data = body.substr(boundary.length() + 2, body.find(boundary, 1) - boundary.length() - 2);
+            body = body.erase(0, boundary.length() + data.length() + 2);
+            datas.push_back(data);
+        }
+
+        for (std::vector<string>::iterator data = datas.begin(); data != datas.end(); data++)
+        {
+            string headers = *data;
+            std::map<string, string> temp_dict;
+
+            while (headers.find("\r\n") != string::npos)
+            {
+                string line =  (headers.substr(0, headers.find("\r\n")));
+                if (line.find(":") != string::npos)
+                {
+                    string key = (line).substr(0, (line).find(" ") - 1);
+                    string value = (line).substr((line).find(" ") + 1, (line).size() - (line).find(" ") - 1);
+					/* cout << "Key : [" << key << "]" << endl; */
+					/* cout << "value : [" << value << "]" << endl; */
+                    temp_dict[key] = value;
+                }
+                headers = headers.erase(0, headers.find("\r\n") + 2);
+                if (headers.size() >= 2 && headers[0] == '\r' && headers[1] == '\n') {
+                    temp_dict["body"] = headers.substr(2, headers.length() - 4);
+                    break;
+                }
+            }
+
+            if (temp_dict.find("Content-Type") != temp_dict.end())
+            {
+				cout << "doing something" << endl;
+				cout << "writing length : " << temp_dict["body"].length() << endl;
+				/* cout << "SENT :" << temp_dict["body"] << endl; */
+                /* string filename = find_filename(temp_dict["Content-Disposition"]); */
+				*file_name = find_filename(temp_dict["Content-Disposition"]);
+                /* std::ofstream out(filename); */
+                /* out << temp_dict["body"]; */
+                /* out.close(); */
+				res.append(temp_dict["body"]);
+            }
+        }
+    }
+	return (res);
+}
 void Response::respond(void)
 {
     if (_req.done() || _req.bad_request())
     {
+        /* ssize_t total_to_send = _entireText.length(); */
 		//check if path is ridrection dynamically
-		if (_req.path() == "/upload.html") //move later (dynamic)
-		{
-			_req.process_image();
-		}
-
         // ssize_t total_to_send = _entireText.length();
 		// cout << "total to send :" << total_to_send << endl;
 

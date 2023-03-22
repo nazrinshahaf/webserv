@@ -197,8 +197,8 @@ void	Server::launch()
 
     while(1)
     {
-		// Log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size())));
-		// Log(DEBUG, (string("Total amount of polls open : ") + to_string(_poll_fds.size())));
+		/* Log(DEBUG, (string("Total amount of client_fds open : ") + to_string(_client_sockets.size()))); */
+		/* Log(DEBUG, (string("Total amount of polls open : ") + to_string(_poll_fds.size()))); */
 		int poll_rv = poll(_poll_fds.data(), _poll_fds.size(), 100);
 		if (poll_rv < 0)
 		{

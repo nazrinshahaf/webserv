@@ -8,7 +8,7 @@ import sys
 import select
 
 print('<!DOCTYPE html>')
-print(f'<h1>DIS THE CGI PAGE BOI</h1>')
+print(f'<h1>DIS THE OTHER CGI PAGE BOI</h1>')
 print(f"<p>____STDIN____</p>")
 flag = 0
 if select.select([sys.stdin, ], [], [], 0.0)[0]:
@@ -23,10 +23,10 @@ print(f"<p>_____________</p>")
 print(f"<p>PATH_INFO: {os.getenv('PATH_INFO')}</p>")
 print(f"<p>QUERY_STRING: {os.getenv('QUERY_STRING')}</p>")
 print('<ul>')
-print('<li><a href="/cgi">Make a CGI request</a></li>')
-print('<li><a href="/cgi/users">Make a CGI request with a path</a></li>')
-print('<li><a href="/cgi/users?campus=15&is_active=true">Make a CGI request with a path and query string</a></li>')
-print('<form method="post" enctype="multipart/form-data" action="/cgi">')
+print('<li><a href="/other_cgi">Make a CGI request</a></li>')
+print('<li><a href="/other_cgi/users">Make a CGI request with a path</a></li>')
+print('<li><a href="/other_cgi/users?campus=15&is_active=true">Make a CGI request with a path and query string</a></li>')
+print('<form method="post" enctype="multipart/form-data" action="/other_cgi">')
 print('<input type="text" id="sometest" name="filename">')
 print('<input type="submit" value="Upload" name="submit">')
 print('</form>')
