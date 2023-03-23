@@ -82,7 +82,6 @@ Response::Response(const Request &req, ListeningSocket &server, const int &clien
 	else if (_req.type() == "DELETE")
 	{
 		string full_path = get_full_path();
-		cout << "full path is: " << full_path << endl;
 		if (!has_allowed_method(_req.type()))
 		{
 			Log(INFO, "Method not allowed");
@@ -244,8 +243,8 @@ bool	Response::is_autoindex(void) const
 	if (location_path == "")
 	{
 		try {
-			_serverConfig.find_normal_directive("autoindex");
-			return (true);
+			string autoindex = _serverConfig.find_normal_directive("autoindex").get_value();
+			return (autoindex == "on");
 		} catch (BaseConfig::ConfigException &e) {
 			return (false);
 		}
@@ -254,10 +253,11 @@ bool	Response::is_autoindex(void) const
 	{
 		try {
 			ServerLocationDirectiveConfig location_block = _serverConfig.find_location_directive(location_path);
+			ServerLocationDirectiveConfig::cit_t directive = location_block.get_config().find("autoindex");
 
-			if (location_block.get_config().find("autoindex") == location_block.get_config().end())
+			if (directive == location_block.get_config().end())
 				return (false);
-			return (true);
+			return (directive->second == "on");
 		} catch (BaseConfig::ConfigException &e) {
 			return (false);
 		}
@@ -376,7 +376,7 @@ void Response::read_file(const string &path) //change name later
 	{
 		if (dir_stat.st_mode & S_IFDIR) //if dir
 		{
-			Log(ERROR, "File is a directory", __LINE__, __PRETTY_FUNCTION__, __FILE__);
+			Log(ERROR, "File {" + path_no_spaces  + "} is a directory", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 			_error_code = 403;
 		}
 		else //if not dir
@@ -387,7 +387,7 @@ void Response::read_file(const string &path) //change name later
 	}
 	else
 	{
-		Log(ERROR, "File doesnt exist or cant be opened", __LINE__, __PRETTY_FUNCTION__, __FILE__);
+		Log(ERROR, "File {" + path_no_spaces  + "} doesnt exist or cant be opened", __LINE__, __PRETTY_FUNCTION__, __FILE__);
 		_error_code = 404;
 	}
 
